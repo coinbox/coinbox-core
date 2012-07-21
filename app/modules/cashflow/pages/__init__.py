@@ -1,0 +1,1 @@
+from .cash import CashPage

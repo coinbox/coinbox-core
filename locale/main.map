@@ -1,0 +1,7 @@
+# Extraction from Python source files
+[python: app/*.py]
+# Only one level down in the tree structure, to not include modules
+# Maybe that's not even necessary
+[python: app/*/*.py]
+
+    
