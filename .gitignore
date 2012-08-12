@@ -14,5 +14,4 @@
 *.swp
 *.project
 *.pydevproject
-release.sh
-comandos.git
+coinbox.cfg
