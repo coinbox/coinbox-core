@@ -1,16 +1,18 @@
 #!/usr/bin/python
-import sys
+import sys, logging
 
 app = None
 try:
     import app
     app.run()
 except KeyboardInterrupt:
-    sys.exit()
+    pass
 except Exception as e:
     if not app:
         raise
-    app.log('ERROR', 'An error stopped the application')
+    logging.error('An error stopped the application')
+    logging.exception(e)
 finally:
     if app is not None:
         app.terminate()
+    sys.exit()

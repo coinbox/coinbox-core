@@ -1,11 +1,15 @@
+import sys, os
+import pkgutil, imp, importlib
+
+import logging
+logger = logging.getLogger(__name__)
+
 import app
 
 app.config.set_default('mod', 'disabled_modules', '')
+app.config.set_default('mod', 'modules_path', './app/mod')
 
-import sys, os
-import pkgutil, importlib
-
-class Module:
+class BaseModuleLoader(object):
     name = None
     dependencies = tuple()
     config = []
@@ -67,8 +71,9 @@ class Module:
     
     def __repr__(self):
         return '<Module %s>' % (self.base_name,)
+Module = BaseModuleLoader
 
-class ModuleWrapper:
+class ModuleWrapper(object):
     """
     Wrapper around the actual installed module.
     Provides functions to make common tasks easier.
@@ -87,20 +92,26 @@ class ModuleWrapper:
         """
         if self.disabled:
             return False
-        self.top_module = importlib.import_module('app.modules.'+self.name)
+        #modules_path = [os.path.abspath(path) for path in app.config['mod', 'modules_path'].split(':')]
+        #if len(modules_path) == 1 and modules_path[0] == '':
+        #    modules_path = os.path.join(os.path.dirname(__file__), 'mod')
+        #loader_info = imp.find_module(self.name, modules_path)
+        #self.top_module = imp.load_module('app.mod.'+self.name, *loader_info)
+        self.top_module = importlib.import_module('app.mod.'+self.name)
         if self.top_module is None:
             return False
         try:
             self.loader = self.top_module.ModuleLoader(self.name)
         except AttributeError:
             return False
+        setattr(importer, self.name, self.top_module)
         all_modules.append(self)
         return True
     
     def disable(self, missing_dependency=False):
         global disabled_modules, missing_modules
         self.disabled = True
-        sys.modules['app.modules.'+self.name] = None
+        sys.modules['app.mod.'+self.name] = None
         if missing_dependency:
             self.forced_disable = True
             missing_modules.append(self)
@@ -114,11 +125,15 @@ class ModuleWrapper:
     def __repr__(self):
         return '<ModuleWrapper %s>' % (self.name, )
 
+class ModuleImporter(object):
+    pass
+
 all_modules = []
 disabled_modules = []
 missing_modules = []
 missing_dependencies = set()
 module_loaders = []
+importer = ModuleImporter()
 
 def init():
     """
@@ -129,38 +144,40 @@ def init():
     disabled_str = app.config['mod', 'disabled_modules']
     disabled_names = disabled_str.split(',') if disabled_str != '' else []
     
-    app.log('LOG', 'Loading modules')
-    modules_path = os.path.dirname(__file__)
+    logger.debug('Loading modules...')
+    modules_path = [os.path.abspath(path) for path in app.config['mod', 'modules_path'].split(':')]
+    if len(modules_path) == 1 and modules_path[0] == '':
+        modules_path = os.path.dirname(__file__)
     # Package with names starting with '_' are ignored
-    packages = [p for p in pkgutil.walk_packages([modules_path]) if not p[1].startswith('_') and p[2]]
+    packages = [p for p in pkgutil.walk_packages(modules_path) if not p[1].startswith('_') and p[2]]
     
     for pkg in packages:
         mod = ModuleWrapper(pkg)
         if mod.name in disabled_names:
             mod.disable()
             continue
-        app.log('LOG', 'Loading module %s' % (mod.name,))
+        logger.debug('Loading module %s...' % (mod.name,))
         if not mod.load():
-            app.log('WARNING', 'Invalid module %s' % (mod.name,))
-    app.log('LOG', '(%d) modules found: %s' % (len(all_modules), ', '.join([m.name for m in all_modules])))
+            logger.warn('Invalid module %s' % (mod.name,))
+    logger.debug('(%d) modules found: %s' % (len(all_modules), ', '.join([m.name for m in all_modules])))
     if disabled_modules:
-        app.log('LOG', '(%d) modules disabled: %s' % (len(disabled_modules), ', '.join([m.name for m in disabled_modules])))
-    _checkModuleDependencies()
+        logger.debug('(%d) modules disabled: %s' % (len(disabled_modules), ', '.join([m.name for m in disabled_modules])))
+    check_dependencies()
     if missing_modules:
-        app.log('LOG', '(%d) modules disabled for missing dependencies: %s' % (len(missing_modules), ', '.join([m.name for m in missing_modules])))
+        logger.warn('(%d) modules disabled for missing dependencies: %s' % (len(missing_modules), ', '.join([m.name for m in missing_modules])))
     
     module_loaders = [mod.loader for mod in all_modules if not mod.disabled]
     module_loaders.sort()
 
-def _checkModuleDependencies():
-    app.log('LOG', 'Checking module dependencies')
+def check_dependencies():
+    logger.debug('Checking module dependencies...')
     to_remove = []
     module_names = set(mod.name for mod in all_modules)
     for mod in all_modules:
         missing = set(mod.loader.dependencies)-module_names
         if missing:
             missing_dependencies.update(missing)
-            app.log('LOG', 'Missing dependencies for module %s: %s' % (mod.name, ', '.join(missing)))
+            logger.warn('Missing dependencies for module %s: %s' % (mod.name, ', '.join(missing)))
             to_remove.append(mod)
     if not to_remove: return
     
@@ -173,7 +190,7 @@ def _checkModuleDependencies():
     
     [mod.disable(missing_dependency=True) for mod in iter_to_remove(to_remove)]
 
-def isInstalled(module_name):
+def is_installed(module_name):
     """
     Returns True if the module called module_name is installed.
     """
@@ -182,7 +199,7 @@ def isInstalled(module_name):
             return True
     return False
 
-def isAvailable(module_name):
+def is_available(module_name):
     """
     Returns True if the module called module_name is installed and enabled.
     """
@@ -210,44 +227,44 @@ def init_translators(tr_builder):
         tr_builder.add(mod.base_name)
 
 # ARGUMENT PARSERS
-def parseArgs():
+def parse_args():
     for mod in app.modules.all():
-        app.log('LOG', 'Parsing command-line arguments for %s' % (mod.base_name,))
+        logger.debug('Parsing command-line arguments for %s' % (mod.base_name,))
         mod.argparser()
 
 # DATABASE EXTENSION
 
-def loadDB():
+def load_database():
     """
-    Load all the database objects of every module so that they can be used with SQLAlchemy.
+    Load all the database models of every module so that they can be used with SQLAlchemy.
     """
     for mod in module_loaders:
-        app.log('LOG', 'Loading DB Objects for %s' % (mod.base_name,))
-        objects = mod.load()
-        app.log('LOG', '%d found' % (len(objects),))
+        logger.debug('Loading DB models for %s' % (mod.base_name,))
+        models = mod.load()
+        logger.debug('%d found.' % (len(models),))
 
-def configDB():
+def config_database():
     """
     Clear and recreate the whole database.
     Note: Only the tables are changed, the database itself cannot be created or dropped.
     """
-    app.log('LOG', 'Clearing database')
+    logger.debug('Clearing database...')
     app.database.clear()
-    app.log('LOG', 'Creating database')
+    logger.debug('Creating database...')
     app.database.create()
 
-def configTestDB():
+def config_test_database():
     """
     Insert the test database values of every module installed.
     """
-    app.log('LOG', 'Adding test values to database')
+    logger.debug('Adding test values to database...')
     for mod in module_loaders:
-        app.log('LOG', 'Adding test values for %s' % (mod.base_name,))
+        logger.debug('Adding test values for %s' % (mod.base_name,))
         mod.test()
 
 # MENU EXTENSION
 
-def extendMenu(menu):
+def extend_menu(menu):
     """
     Load all menu extensions of every module, meaning all the root items and sub-items defined.
     """

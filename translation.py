@@ -64,7 +64,7 @@ def write_map_for_module(mod):
     else:
         with open("./locale/%s.map" % (domain,), "w") as f:
             f.write("""# Extraction from Python source files
-[python: app/modules/%s/**.py]
+[python: app/mod/%s/**.py]
 
     """ % (mod,))
 

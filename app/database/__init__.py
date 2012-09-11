@@ -3,6 +3,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.engine.url import URL
 
+import logging
+logger = logging.getLogger(__name__)
+
 import app
 from .profile import get_used_profile
 
@@ -51,15 +54,15 @@ def init():
     global engine
 
     if engine is not None:
-        app.log('WARN', 'Engine is not None')
+        logger.warn('Engine is not None')
         return
     
-    app.log('LOG', 'Starting database')
+    logger.debug('Starting database...')
     url = get_url()
     try:
         start(url)
     except:
-        app.log('ERROR', 'Could not connect to database: %s' % (url,))
+        logger.error('Could not connect to database: %s' % (url,))
         return False
     else:
         return True
