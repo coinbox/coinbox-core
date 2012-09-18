@@ -1,18 +1,20 @@
 #!/usr/bin/python
-import sys, logging
+import sys, os, logging
+
+# Make symbolic links work
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 app = None
 try:
-    import app
-    app.run()
+    import cbpos
+    cbpos.run()
 except KeyboardInterrupt:
     pass
 except Exception as e:
-    if not app:
-        raise
     logging.error('An error stopped the application')
     logging.exception(e)
 finally:
+    logging.info('Exiting...')
     if app is not None:
-        app.terminate()
+        cbpos.terminate()
     sys.exit()

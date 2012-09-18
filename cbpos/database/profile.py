@@ -1,4 +1,4 @@
-import app
+import cbpos
 from .driver import get_driver
 
 class Profile(object):
@@ -24,31 +24,31 @@ class Profile(object):
     def save(self):
         if not self.editable:
             return
-        app.config['db.'+self._name] = dict(self)
+        cbpos.config['db.'+self._name] = dict(self)
         if self.name != self._name:
-            app.config['db.'+self.name] = app.config['db.'+self._name]
-            app.config['db.'+self._name] = None
+            cbpos.config['db.'+self.name] = cbpos.config['db.'+self._name]
+            cbpos.config['db.'+self._name] = None
             _profiles[self.name] = self
             try:
                 _profiles.pop(self._name)
             except KeyError:
                 pass
             self._name = self.name
-        app.config.save()
+        cbpos.config.save()
     
     def use(self):
-        app.config['db', 'used'] = self._name
-        app.config.save()
+        cbpos.config['db', 'used'] = self._name
+        cbpos.config.save()
     
     def delete(self):
         if not self.editable:
             return
-        app.config['db.'+self._name] = None
+        cbpos.config['db.'+self._name] = None
         try:
             _profiles.pop(self._name)
         except KeyError:
             pass
-        app.config.save()
+        cbpos.config.save()
     
     _options = ('host', 'port', 'username', 'password', 'database', 'query')
     def __iter__(self):
@@ -69,21 +69,21 @@ default.editable = False
 def get_profile(profile_name):
     if profile_name not in _profiles:
         config = 'db.'+profile_name
-        driver_name = app.config[config, 'drivername']
+        driver_name = cbpos.config[config, 'drivername']
         if driver_name is None:
             return None
         driver = get_driver(driver_name)
         
-        kwargs = dict([(a, app.config[config, a]) for a in Profile._options])
+        kwargs = dict([(a, cbpos.config[config, a]) for a in Profile._options])
         _profiles[profile_name] = Profile(profile_name, driver, **kwargs)
     return _profiles[profile_name]
 
 def get_used_profile():
-    profile_name = app.config['db', 'used']
+    profile_name = cbpos.config['db', 'used']
     return get_profile(profile_name)
 
 def all_profiles(names=False):
     if not names:
-        return [default]+[get_profile(section_name[3:]) for section_name, s in app.config if section_name.startswith('db.')]
+        return [default]+[get_profile(section_name[3:]) for section_name, s in cbpos.config if section_name.startswith('db.')]
     else:
         return _profiles.keys()

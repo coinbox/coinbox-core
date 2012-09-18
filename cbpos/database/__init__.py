@@ -6,12 +6,12 @@ from sqlalchemy.engine.url import URL
 import logging
 logger = logging.getLogger(__name__)
 
-import app
+import cbpos
 from .profile import get_used_profile
 
 # Define default database configuration for different RDBMS's
-app.config.set_default('db', 'used', 'default')
-app.config.set_default('db', 'echo', '')
+cbpos.config.set_default('db', 'used', 'default')
+cbpos.config.set_default('db', 'echo', '')
 
 _session = None
 def session():
@@ -35,7 +35,7 @@ def clear():
     Clear the database.
     Note: Drops all tables, does not drop database.
     """
-    metadata = app.database.Base.metadata
+    metadata = cbpos.database.Base.metadata
     metadata.drop_all()
 
 def create():
@@ -43,7 +43,7 @@ def create():
     Create the database.
     Note: Creates all the tables, does not create the database itself.
     """
-    metadata = app.database.Base.metadata
+    metadata = cbpos.database.Base.metadata
     metadata.create_all()
 
 engine, Base, Session = None, None, None
@@ -70,7 +70,7 @@ def init():
 def start(url):
     global engine, Base, Session
     
-    echo = bool(app.config['db', 'echo'])
+    echo = bool(cbpos.config['db', 'echo'])
     
     engine = create_engine(url, echo=echo)
     Base = declarative_base(bind=engine)

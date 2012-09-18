@@ -1,11 +1,11 @@
-import app
+import cbpos
 import gettext
 
-app.config.set_default('locale', 'use', '1')
-app.config.set_default('locale', 'localedir', './locale')
-app.config.set_default('locale', 'languages', '')
-app.config.set_default('locale', 'fallback', '1')
-app.config.set_default('locale', 'codeset', '')
+cbpos.config.set_default('locale', 'use', '1')
+cbpos.config.set_default('locale', 'localedir', './locale')
+cbpos.config.set_default('locale', 'languages', '')
+cbpos.config.set_default('locale', 'fallback', '1')
+cbpos.config.set_default('locale', 'codeset', '')
 
 class TranslatorBuilder(object):
     def __init__(self, localedir=None, languages=None, class_=None, fallback=None, codeset=None):
@@ -30,7 +30,7 @@ class TranslatorBuilder(object):
         main_tr = ModuleTranslator(domain="main", localedir=self.localedir, languages=self.languages,
                                      class_=self.class_, fallback=self.fallback, codeset=self.codeset)
         self.tr._ = main_tr._
-        app.tr = self.tr
+        cbpos.tr = self.tr
     
     def default_domain(self, module_name):
         return 'mod_%s' % (module_name,)
@@ -43,7 +43,7 @@ class DummyTranslatorBuilder(object):
         setattr(self.tr, module_name, Translator())
     
     def install(self):
-        app.tr = self.tr
+        cbpos.tr = self.tr
 
 class Translator(object):
     def _(self, message):

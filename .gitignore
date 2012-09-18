@@ -15,3 +15,4 @@
 *.project
 *.pydevproject
 coinbox.cfg
+default.sqlite

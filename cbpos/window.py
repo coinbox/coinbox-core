@@ -1,6 +1,6 @@
 from PySide import QtCore, QtGui
 
-import app
+import cbpos
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self):
@@ -13,7 +13,7 @@ class MainWindow(QtGui.QMainWindow):
         
         self.setCentralWidget(self.tabs)
         
-        self.statusBar().showMessage(app.tr._('Coinbox POS is ready.'))
+        self.statusBar().showMessage(cbpos.tr._('Coinbox POS is ready.'))
         
         self.setGeometry(300, 300, 800, 600)
         self.setWindowTitle('Coinbox')
@@ -21,7 +21,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     def OnShow(self, event):
         event.Skip()
-        evt = app.Event('app', app.EVT_START)
+        evt = cbpos.Event('app', cbpos.EVT_START)
         pos.event_queue.send(evt)
 
     def OnIdle(self, event):
@@ -36,10 +36,10 @@ class MainWindow(QtGui.QMainWindow):
         """
         Load the menu "root" items and "items" into the toolbook with the appropriate pages. 
         """
-        show_empty_root_items = app.config['menu', 'show_empty_root_items']
-        show_disabled_items = app.config['menu', 'show_disabled_items']
+        show_empty_root_items = cbpos.config['menu', 'show_empty_root_items']
+        show_disabled_items = cbpos.config['menu', 'show_disabled_items']
         
-        for root in app.menu.main.items:
+        for root in cbpos.menu.main.items:
             if not root.enabled and not show_disabled_items:
                 continue
             enabled_children = [i for i in root.children if i.enabled]

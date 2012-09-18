@@ -4,10 +4,10 @@ import pkgutil, imp, importlib
 import logging
 logger = logging.getLogger(__name__)
 
-import app
+import cbpos
 
-app.config.set_default('mod', 'disabled_modules', '')
-app.config.set_default('mod', 'modules_path', './app/mod')
+cbpos.config.set_default('mod', 'disabled_modules', '')
+cbpos.config.set_default('mod', 'modules_path', './app/mod')
 
 class BaseModuleLoader(object):
     name = None
@@ -24,12 +24,15 @@ class BaseModuleLoader(object):
         
         for section, options in self.config:
             for opt, val in options.iteritems():
-                app.config.set_default(section, opt, val)
+                cbpos.config.set_default(section, opt, val)
         
         self.event_handler()
     
+    def ui_handler(self):
+        return None
+    
     def res(self, resource):
-        return '%s/%s/%s' % (app.res_path(), self.base_name, resource)
+        return os.path.join(cbpos.res_path(), self.base_name, resource)
     
     def load(self):
         return []
@@ -92,12 +95,12 @@ class ModuleWrapper(object):
         """
         if self.disabled:
             return False
-        #modules_path = [os.path.abspath(path) for path in app.config['mod', 'modules_path'].split(':')]
+        #modules_path = [os.path.abspath(path) for path in cbpos.config['mod', 'modules_path'].split(':')]
         #if len(modules_path) == 1 and modules_path[0] == '':
         #    modules_path = os.path.join(os.path.dirname(__file__), 'mod')
         #loader_info = imp.find_module(self.name, modules_path)
-        #self.top_module = imp.load_module('app.mod.'+self.name, *loader_info)
-        self.top_module = importlib.import_module('app.mod.'+self.name)
+        #self.top_module = imp.load_module('cbpos.mod.'+self.name, *loader_info)
+        self.top_module = importlib.import_module('cbpos.mod.'+self.name)
         if self.top_module is None:
             return False
         try:
@@ -111,7 +114,7 @@ class ModuleWrapper(object):
     def disable(self, missing_dependency=False):
         global disabled_modules, missing_modules
         self.disabled = True
-        sys.modules['app.mod.'+self.name] = None
+        sys.modules['cbpos.mod.'+self.name] = None
         if missing_dependency:
             self.forced_disable = True
             missing_modules.append(self)
@@ -141,11 +144,11 @@ def init():
     """
     global module_loaders
     
-    disabled_str = app.config['mod', 'disabled_modules']
+    disabled_str = cbpos.config['mod', 'disabled_modules']
     disabled_names = disabled_str.split(',') if disabled_str != '' else []
     
     logger.debug('Loading modules...')
-    modules_path = [os.path.abspath(path) for path in app.config['mod', 'modules_path'].split(':')]
+    modules_path = [os.path.abspath(path) for path in cbpos.config['mod', 'modules_path'].split(':')]
     if len(modules_path) == 1 and modules_path[0] == '':
         modules_path = os.path.dirname(__file__)
     # Package with names starting with '_' are ignored
@@ -194,19 +197,13 @@ def is_installed(module_name):
     """
     Returns True if the module called module_name is installed.
     """
-    for mod in all_modules:
-        if module_name == mod.name:
-            return True
-    return False
+    return module_name in (mod.name for mod in all_modules)
 
 def is_available(module_name):
     """
     Returns True if the module called module_name is installed and enabled.
     """
-    for mod in module_loaders:
-        if module_name == mod.base_name:
-            return True
-    return False
+    return module_name in (mod.base_name for mod in module_loaders)
 
 def all():
     """
@@ -223,12 +220,12 @@ def all_wrappers():
 # TRANSLATORS
 
 def init_translators(tr_builder):
-    for mod in app.modules.all():
+    for mod in cbpos.modules.all():
         tr_builder.add(mod.base_name)
 
 # ARGUMENT PARSERS
 def parse_args():
-    for mod in app.modules.all():
+    for mod in cbpos.modules.all():
         logger.debug('Parsing command-line arguments for %s' % (mod.base_name,))
         mod.argparser()
 
@@ -249,9 +246,9 @@ def config_database():
     Note: Only the tables are changed, the database itself cannot be created or dropped.
     """
     logger.debug('Clearing database...')
-    app.database.clear()
+    cbpos.database.clear()
     logger.debug('Creating database...')
-    app.database.create()
+    cbpos.database.create()
 
 def config_test_database():
     """
@@ -268,7 +265,7 @@ def extend_menu(menu):
     """
     Load all menu extensions of every module, meaning all the root items and sub-items defined.
     """
-    from app.menu import MenuRoot, MenuItem
+    from cbpos.menu import MenuRoot, MenuItem
     roots = []
     items = []
     for mod in module_loaders:
