@@ -16,3 +16,4 @@
 *.pydevproject
 coinbox.cfg
 default.sqlite
+*.log

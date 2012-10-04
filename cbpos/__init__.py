@@ -1,11 +1,11 @@
-import cbpos.logger as logger
-import pydispatch
-
 # Load the main interface for configuration access
 import cbpos.configuration as configuration
 config = configuration.Config('coinbox.cfg')
 
+import cbpos.logger as logger
 logger.configure()
+
+import pydispatch
 
 from cbpos.translator import TranslatorBuilder, DummyTranslatorBuilder
 tr = None

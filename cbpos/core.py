@@ -10,7 +10,6 @@ import cbpos
 
 cbpos.config.set_default('app', 'fullscreen', '')
 cbpos.config.set_default('app', 'first_run', '1')
-cbpos.config.set_default('app', 'log', 'INFO')
 cbpos.config.set_default('app', 'ui_module', 'base')
 
 logger.info('Python: %s' % (sys.version,))
@@ -42,7 +41,9 @@ def parse_args():
     cbpos.args = cbpos.parser.parse_args()
     
     if hasattr(cbpos.args, "handle"):
-        cbpos.args.handle(cbpos.args)
+        ret = cbpos.args.handle(cbpos.args)
+        return (ret is None or ret)
+    return True
 
 def init_translation(use=True):
     if not use:
@@ -80,7 +81,8 @@ def run():
     global _ui_handler, _use_translation, _load_database, _load_menu, _break_init
     logger.debug('Running application...')
     
-    parse_args()
+    if not parse_args():
+        return
     
     if cbpos.config['app', 'first_run'] or cbpos.config.empty():
         # Force configuration if configuration is empty.
