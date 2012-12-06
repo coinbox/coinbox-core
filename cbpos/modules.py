@@ -1,5 +1,5 @@
 import sys, os
-import pkgutil, imp, importlib
+import pkgutil, importlib
 
 import logging
 logger = logging.getLogger(__name__)
@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 import cbpos
 
 cbpos.config.set_default('mod', 'disabled_modules', '')
-cbpos.config.set_default('mod', 'modules_path', './app/mod')
+cbpos.config.set_default('mod', 'modules_path', './cbpos/mod')
 
 class BaseModuleLoader(object):
     name = None
@@ -30,9 +30,6 @@ class BaseModuleLoader(object):
     
     def ui_handler(self):
         return None
-    
-    def res(self, resource):
-        return os.path.join(cbpos.res_path(), self.base_name, resource)
     
     def load(self):
         return []
@@ -217,11 +214,20 @@ def all_wrappers():
     """
     return all_modules+disabled_modules+missing_modules
 
+def wrapper_by_name(name):
+    for mod in all_modules:
+        if mod.name == name:
+            return mod
+
 # TRANSLATORS
 
 def init_translators(tr_builder):
     for mod in cbpos.modules.all():
         tr_builder.add(mod.base_name)
+
+def init_resources(res):
+    for mod in cbpos.modules.all():
+        res.add(mod.base_name)
 
 # ARGUMENT PARSERS
 def parse_args():

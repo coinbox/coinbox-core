@@ -7,6 +7,9 @@ logger.configure()
 
 import pydispatch
 
+from cbpos.resource import Resource
+res = Resource()
+
 from cbpos.translator import TranslatorBuilder, DummyTranslatorBuilder
 tr = None
 

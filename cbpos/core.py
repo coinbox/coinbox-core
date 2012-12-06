@@ -1,4 +1,4 @@
-__all__ = ('run', 'terminate', 'use_translation', 'load_database', 'break_init', 'set_ui_handler', 'load_menu', 'res_path')
+__all__ = ('run', 'terminate', 'use_translation', 'load_database', 'break_init', 'set_ui_handler', 'load_menu')
 
 import sys, os, argparse
 
@@ -80,6 +80,8 @@ def run():
     """
     global _ui_handler, _use_translation, _load_database, _load_menu, _break_init
     logger.debug('Running application...')
+    
+    cbpos.modules.init_resources(cbpos.res)
     
     if not parse_args():
         return
@@ -173,6 +175,3 @@ def set_ui_handler(handler=None):
 def break_init(on=True):
     global _break_init
     _break_init = on
-    
-def res_path():
-    return './res'
