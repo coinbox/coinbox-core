@@ -5,90 +5,124 @@
 # First, write_map, then extract, init, (edit the po file in ./locale/<locale>/LC_MESSAGES/<domain>.po),
 #        compile, and after changes in the .pot file (if any) update.
 
-import subprocess
+import cbpos, os, subprocess, logging
 
-def get_domain(mod):
-    if mod == "":
-        return "main"
-    else:
-        return "mod_%s" % (mod,)
-
-def do_extract(mod):
-    domain = get_domain(mod)
+class Translator(object):
+    def __init__(self):
+        self.locale_dir = './locale'
+        self.project = 'coinbox'
+        self.version = '1.0'
     
-    subprocess.call(["pybabel", "extract",
-                     "--output=./locale/%s.pot" % (domain,),
-                     "--mapping=./locale/%s.map" % (domain,),
-                     "--project=coinbox",
-                     "--version=1.0",
-                     "./"])
-
-def do_init(mod, locale):
-    domain = get_domain(mod)
+    def domain(self, mod):
+        if mod == "":
+            return "main"
+        else:
+            return "mod_%s" % (mod,)
     
-    subprocess.call(["pybabel", "init",
-                     "--domain=%s" % (domain,),
-                     "--input-file=./locale/%s.pot" % (domain,),
-                     "--output-dir=./locale",
-                     "--locale=%s" % (locale,)])
+    def path(self, mod):
+        if mod == "":
+            return './'
+            return os.path.dirname(cbpos.__file__)
+        else:
+            return os.path.dirname(cbpos.modules.wrapper_by_name(mod).top_module.__file__)
 
-def do_compile(mod, locale):
-    domain = get_domain(mod)
+    def execute(self, command, *args, **kwargs):
+        popen = ["pybabel", command]
+        for kw, arg in kwargs.iteritems():
+            popen.append('--{}={}'.format(kw.replace('_', '-'), arg))
+        popen.extend(args)
+        return subprocess.call(popen)
+        
+        """
+        from babel.messages.frontend import CommandLineInterface
+        cli = CommandLineInterface()
+        cli._configure_logging(logging.ERROR)
+        return getattr(cli, popen[1])(popen[2:]) # or cli.run(popen[1:])
+        """
+
+    def extract(self, mod):
+        domain = self.domain(mod)
+        path = self.path(mod)
+        
+        self.execute("extract", path,
+             output=self.locale_dir+'/'+domain+'.pot',
+             mapping=self.locale_dir+'/'+domain+'.map',
+             project=self.project, version=self.version)
+
+    def init(self, mod, locale):
+        domain = self.domain(mod)
+        
+        self.execute("init", domain=domain,
+            input_file=self.locale_dir+'/'+domain+'.pot',
+            output_dir=self.locale_dir,
+            locale=locale)
+
+    def compile(self, mod, locale):
+        domain = self.domain(mod)
+        
+        self.execute("compile", domain=domain,
+            directory=self.locale_dir,
+            locale=locale,
+            input_file=self.locale_dir+'/'+locale+'/LC_MESSAGES/'+domain+'.po')
+
+    def update(self, mod, locale):
+        domain = self.domain(mod)
+        
+        self.execute("update", domain=domain,
+            input_file=self.locale_dir+'/'+domain+'.pot',
+            output_dir=self.locale_dir,
+            locale=locale)
+
+    def write_map(self, mod):
+        domain = self.domain(mod)
+        
+        if mod == "":
+            with open("%s/%s.map" % (self.locale_dir, domain,), "w") as f:
+                f.write("""
+[ignore: cbpos/mod/*/**.py]
+# Extraction from Python source files
+[python: cbpos/**.py]""")
+        else:
+            with open("%s/%s.map" % (self.locale_dir, domain,), "w") as f:
+                f.write("""# Extraction from Python source files
+[python: **.py]""")
     
-    subprocess.call(["pybabel", "compile",
-                     "--domain=%s" % (domain,),
-                     "--directory=./locale",
-                     "--locale=%s" % (locale,),
-                     "--input-file=./locale/%s/LC_MESSAGES/%s.po" % (locale, domain,)])
-
-def do_update(mod, locale):
-    domain = get_domain(mod)
-    
-    subprocess.call(["pybabel", "update",
-                     "--domain=%s" % (domain,),
-                     "--input-file=./locale/%s.pot" % (domain,),
-                     "--output-dir=./locale",
-                     "--locale=%s" % (locale,)])
-
-def write_map_for_module(mod):
-    domain = get_domain(mod)
-    if mod == "":
-        with open("./locale/%s.map" % (domain,), "w") as f:
-            f.write("""# Extraction from Python source files
-[python: app/*.py]
-# Only one level down in the tree structure, to not include modules
-# Maybe that's not even necessary
-[python: app/*/*.py]
-
-    """)
-    else:
-        with open("./locale/%s.map" % (domain,), "w") as f:
-            f.write("""# Extraction from Python source files
-[python: app/mod/%s/**.py]
-
-    """ % (mod,))
+    def main(self):
+        options = ["write_map", "extract", "init", "compile", "update"]
+        
+        mod = raw_input("Which module are you working on?(leave empty for core)")
+        
+        if mod != '' and cbpos.modules.wrapper_by_name(mod) is None:
+            print 'No such module!'
+            return None
+        
+        while True:
+            args = [mod]
+            for i, opt in enumerate(options):
+                print i, "-", opt
+            
+            opt = raw_input("What do you want to do?")
+            try:
+                opt = options[int(opt)]
+            except (IndexError, TypeError, ValueError):
+                pass
+            if opt in ("init", "compile", "update"):
+                locale = raw_input("What locale?")
+                args.append(locale)
+            try:
+                func = getattr(self, opt)
+            except AttributeError:
+                break
+            func(*args)
+            print 'Done.'
+        
+        print 'Done with this module.'
+        
+        return self.main()
 
 if __name__ == "__main__":
-    options = {"write_map": write_map_for_module,
-               "extract": do_extract,
-               "init": do_init,
-               "compile": do_compile,
-               "update": do_update}
-    
-    for i, s in enumerate(options):
-        print i, "-", s 
-    
-    opt = None
-    while opt not in options:
-        opt = raw_input("What do you want to do?")
-
-    mod = raw_input("Which module?(leave empty if not a module)")
-    args = [mod]
-    
-    if opt in ("init", "compile", "update"):
-        locale = raw_input("What locale?")
-        args.append(locale)
-
-    options[opt](*args)
-    
-    print "Done."
+    try:
+        Translator().main()
+    except KeyboardInterrupt:
+        print
+        print 'Yalla... Exiting!'
