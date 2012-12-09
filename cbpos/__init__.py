@@ -13,6 +13,7 @@ res = Resource()
 from cbpos.translator import TranslatorBuilder, DummyTranslatorBuilder
 tr = None
 
+from cbpos.uihandler import BaseUIHandler
 ui = None
 
 import cbpos.database as database

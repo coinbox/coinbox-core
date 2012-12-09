@@ -115,7 +115,7 @@ def run():
     else:
         logger.debug('Initializing modules...')
         # Initiate every installed module
-        for mod in cbpos.modules.all():
+        for mod in cbpos.modules.all_loaders():
             try:
                 init = mod.init()
             except Exception as e:
@@ -130,7 +130,7 @@ def run():
     
     cbpos.config['app', 'first_run'] = ''
     
-    for mod in cbpos.modules.all():
+    for mod in cbpos.modules.all_loaders():
         if mod.base_name == cbpos.config['app', 'ui_module']:
             set_ui_handler(mod.ui_handler())
             break

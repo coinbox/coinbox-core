@@ -24,7 +24,7 @@ class Translator(object):
             return './'
             return os.path.dirname(cbpos.__file__)
         else:
-            return os.path.dirname(cbpos.modules.wrapper_by_name(mod).top_module.__file__)
+            return os.path.dirname(cbpos.modules.by_name(mod).path)
 
     def execute(self, command, *args, **kwargs):
         popen = ["pybabel", command]
@@ -92,7 +92,7 @@ class Translator(object):
         
         mod = raw_input("Which module are you working on?(leave empty for core)")
         
-        if mod != '' and cbpos.modules.wrapper_by_name(mod) is None:
+        if mod != '' and cbpos.modules.by_name(mod) is None:
             print 'No such module!'
             return None
         

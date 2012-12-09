@@ -13,7 +13,7 @@ class Resource(object):
 class ResourceGetter(object):
     def __init__(self, name):
         self.name = name
-        self.mod = cbpos.modules.wrapper_by_name(self.name)
+        self.mod = cbpos.modules.by_name(name)
         mod_path = os.path.dirname(self.mod.top_module.__file__)
         self.path = os.path.join(mod_path, 'res')
     
