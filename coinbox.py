@@ -4,7 +4,7 @@ import sys, os, logging
 # Make symbolic links work
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-app = None
+cbpos = None
 try:
     import cbpos
     cbpos.run()
@@ -15,6 +15,6 @@ except Exception as e:
     logging.exception(e)
 finally:
     logging.info('Exiting...')
-    if app is not None:
+    if cbpos is not None:
         cbpos.terminate()
     sys.exit()
