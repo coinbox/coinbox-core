@@ -29,3 +29,5 @@ description = 'Launch coinbox POS'
 main = None
 
 from cbpos.core import *
+
+_actions = []

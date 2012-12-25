@@ -56,6 +56,12 @@ class BaseModuleLoader(object):
         Returns the menu structure [Roots, Children] Items corresponding to this module.
         """
         return [[], []]
+
+    def actions(self):
+        """
+        Returns the actions structure.
+        """
+        return []
     
     def argparser(self):
         """
@@ -298,6 +304,18 @@ def config_test_database():
         logger.debug('Adding test values for %s' % (mod.base_name,))
         mod.test()
 
+
+
+def extend_actions():
+    from cbpos import _actions
+
+    for mod in all_loaders():
+        logger.debug('Loading actions for module %s'%mod.base_name)
+        _actions.extend( mod.actions() )
+
+    logger.debug('Actions: %s'%_actions)
+
+
 # MENU EXTENSION
 
 def extend_menu(menu):
@@ -318,3 +336,5 @@ def extend_menu(menu):
 
     for item in items:
         MenuItem(menu, **item)
+
+    extend_actions()
