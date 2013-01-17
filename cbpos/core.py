@@ -116,11 +116,13 @@ def run():
         logger.debug('Initializing modules...')
         # Initiate every installed module
         for mod in cbpos.modules.all_loaders():
+            logger.debug('Initializing module %s' % (mod.base_name,))
             try:
                 init = mod.init()
             except Exception as e:
                 logger.fatal('Initializing module %s failed.' % (mod.base_name,))
                 logger.exception(e)
+                return False
             else:
                 if not init:
                     logger.fatal('Initializing module %s failed.' % (mod.base_name,))

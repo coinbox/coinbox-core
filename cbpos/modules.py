@@ -118,7 +118,6 @@ class ModuleWrapper(object):
         except AttributeError:
             self.loader = None
             return False
-        print len(dir(self.loader))
         return True
     
     def disable(self, missing_dependency=False):
