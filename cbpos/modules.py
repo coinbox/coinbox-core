@@ -139,13 +139,6 @@ class ModuleWrapper(object):
         """
         return getattr(cbpos.res, self.name)('')
     
-    @property
-    def path(self):
-        if self.top_module is None:
-            return None
-        else:
-            return os.path.dirname(self.top_module.__file__)
-    
     def __lt__(self, other):
         """
         Implements the '<' comparison operator.
@@ -166,14 +159,41 @@ def init():
     # Extract names of disabled modules from config
     disabled_str = cbpos.config['mod', 'disabled_modules']
     disabled_names = disabled_str.split(',') if disabled_str != '' else []
+
+    #import cbpos.mod
+    modules_path = [os.path.abspath(p) for p in cbpos.config['mod', 'modules_path'].split(':')]
+    cbpos.mod.__path__.extend(modules_path)
     
     logger.debug('Loading modules...')
+    p = path()
+    logger.debug('Path ({}): {}'.format(len(p), repr(p)))
     
-    #modules_path = [os.path.abspath(path) for path in cbpos.config['mod', 'modules_path'].split(':')]
-    #if len(modules_path) == 1 and modules_path[0] == '':
-    #    modules_path = os.path.dirname(__file__)
     # Package with names starting with '_' are ignored
-    packages = [p for p in pkgutil.walk_packages(path()) if not p[1].startswith('_') and p[2]]
+    packages = []
+    try:
+        if not sys.frozen: # if not frozen, sys.frozen raises AttributeError
+            raise AttributeError
+    except AttributeError:
+        pass
+    else:
+        # Try to find the packages frozen in the executable with PyInstaller
+        try:
+            import pyi_importers
+        except ImportError:
+            logger.warn('App is frozen but pyi_importers is not available')
+        else:
+            # Find FrozenImporter object from sys.meta_path.
+            importer = None
+            for obj in sys.meta_path:
+                if isinstance(obj, pyi_importers.FrozenImporter):
+                    importer = obj
+                    break
+
+            for name in importer.toc:
+                p = name.split('.')
+                if len(p) == 3 and p[0] == 'cbpos' and p[1] == 'mod':
+                    packages.append((importer, p[2], True)) # The first and 3rd arguments are ignored
+    packages += [p for p in pkgutil.walk_packages(path()) if not p[1].startswith('_') and p[2]]
     
     for pkg in packages:
         mod = ModuleWrapper(pkg)
@@ -234,7 +254,8 @@ def depsort(ls):
 # Helper functions
 
 def path():
-    return [os.path.abspath(path) for path in cbpos.config['mod', 'modules_path'].split(':')]
+    import cbpos.mod
+    return cbpos.mod.__path__
 
 def is_installed(module_name):
     return module_name in modules

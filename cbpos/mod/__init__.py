@@ -1,4 +1,1 @@
-import os
-import cbpos
-
-__path__.extend(cbpos.modules.path())
+__import__('pkg_resources').declare_namespace(__name__)

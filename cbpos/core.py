@@ -12,24 +12,12 @@ cbpos.config.set_default('app', 'fullscreen', '')
 cbpos.config.set_default('app', 'first_run', '1')
 cbpos.config.set_default('app', 'ui_module', 'base')
 
-logger.info('Python: %s' % (sys.version,))
-
-logger.debug('Creating menu...')
-import cbpos.menu
-cbpos.menu.init()
-
-logger.debug('Importing database...')
-import cbpos.database
-
-logger.debug('Importing modules...')
-import cbpos.modules
-cbpos.modules.init()
-
 def parse_args():
     # TODO: Careful!! We are using another version of argparse that does not ship with Python2.7
     # (I think it does with Python3.1) So there is a file called argparse.py
     # You will not be able to run the app without it.
     logger.debug('Parsing arguments. argparse is version ' + argparse.__version__)
+    logger.debug('Loaded from ' + argparse.__file__)
     
     cbpos.parser = argparse.ArgumentParser(description=cbpos.description)
     
@@ -79,8 +67,22 @@ def run():
     Main function to run the application.
     """
     global _ui_handler, _use_translation, _load_database, _load_menu, _break_init
+    
+    logger.info('Python: %s' % (sys.version,))
+
+    logger.debug('Importing menu...')
+    import cbpos.menu
+
+    logger.debug('Importing database...')
+    import cbpos.database
+
+    logger.debug('Importing modules...')
+    import cbpos.modules
+    
     logger.debug('Running application...')
     
+    cbpos.menu.init()
+    cbpos.modules.init()
     cbpos.modules.init_resources(cbpos.res)
     
     if not parse_args():

@@ -1,3 +1,7 @@
+__import__('pkg_resources').declare_namespace(__name__)
+
+import cbpos.mod
+
 # Load the main interface for configuration access
 import cbpos.configuration as configuration
 config = configuration.Config('coinbox.cfg')

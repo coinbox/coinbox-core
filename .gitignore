@@ -17,3 +17,6 @@
 coinbox.cfg
 default.sqlite
 *.log
+build
+dist
+*.egg-info
