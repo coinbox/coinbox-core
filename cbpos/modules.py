@@ -160,9 +160,18 @@ def init():
     disabled_str = cbpos.config['mod', 'disabled_modules']
     disabled_names = disabled_str.split(',') if disabled_str != '' else []
 
-    #import cbpos.mod
-    modules_path = [os.path.abspath(p) for p in cbpos.config['mod', 'modules_path'].split(':')]
-    cbpos.mod.__path__.extend(modules_path)
+    if cbpos.config['mod', 'modules_path']:
+        # Insert the module paths from config by making sure:
+        # - there are no duplicates (set)
+        # - the custom paths exist
+        # - case-insensitive paths are taken into account
+        modules_path = set([os.path.normcase(os.path.realpath(p)) \
+                            for p in cbpos.config['mod', 'modules_path'].split(':') \
+                            if p and os.path.exists(p)] + \
+                           
+                           [os.path.normcase(os.path.realpath(p)) \
+                            for p in cbpos.mod.__path__])
+        cbpos.mod.__path__ = list(modules_path)
     
     logger.debug('Loading modules...')
     p = path()
