@@ -56,11 +56,12 @@ def init_translation(use=True):
     cbpos.modules.init_translators(tr_builder)
     tr_builder.install()
 
-def terminate():
+def terminate(retcode=1):
     try:
         logger.info('Terminating application...')
     except:
         pass
+    return sys.exit(retcode)
 
 def run():
     """
