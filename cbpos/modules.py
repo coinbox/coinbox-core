@@ -333,37 +333,28 @@ def config_test_database():
         logger.debug('Adding test values for %s' % (mod.base_name,))
         mod.test()
 
+# INTERFACE EXTENSION
 
-
-def extend_actions():
-    from cbpos import _actions
-
-    for mod in all_loaders():
-        logger.debug('Loading actions for module %s'%mod.base_name)
-        _actions.extend( mod.actions() )
-
-    logger.debug('Actions: %s'%_actions)
-
-
-# MENU EXTENSION
-
-def extend_menu(menu):
+def extend_interface(menu):
     """
     Load all menu extensions of every module, meaning all the root items and sub-items defined.
+    Load all actions of every module.
     """
-    from cbpos.menu import MenuRoot, MenuItem
     roots = []
     items = []
     for mod in all_loaders():
-        logger.debug('Loading menu for %s...' % (mod.base_name,))
+        logger.debug('Loading menu for module %s...' % (mod.base_name,))
         mod_roots, mod_items = mod.menu()
         roots.extend(mod_roots)
         items.extend(mod_items)
+    
+    [r.attach(menu) for r in roots]
+    [i.attach(menu) for i in items]
 
-    for root in roots:
-        MenuRoot(menu, **root)
+    logger.debug('Menu roots (%d) and menu items (%d).' % (len(roots), len(items)))
 
-    for item in items:
-        MenuItem(menu, **item)
+    for mod in all_loaders():
+        logger.debug('Loading actions for module %s...' % (mod.base_name,))
+        [a.attach(menu) for a in mod.actions()]
 
-    extend_actions()
+    logger.debug('Actions (%d).' % (len(menu.actions),))

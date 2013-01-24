@@ -71,9 +71,6 @@ def run():
     
     logger.info('Python: %s' % (sys.version,))
 
-    logger.debug('Importing menu...')
-    import cbpos.menu
-
     logger.debug('Importing database...')
     import cbpos.database
 
@@ -82,7 +79,6 @@ def run():
     
     logger.debug('Running application...')
     
-    cbpos.menu.init()
     cbpos.modules.init()
     cbpos.modules.init_resources(cbpos.res)
     
@@ -108,8 +104,8 @@ def run():
     if _load_menu:
         logger.debug('Extending menu...')
         # Load appropriate menu items from all the modules
-        cbpos.modules.extend_menu(cbpos.menu.main)
-        cbpos.menu.main.sort()
+        cbpos.modules.extend_interface(cbpos.menu)
+        cbpos.menu.sort()
     else:
         logger.debug('Did not load menu.')
     

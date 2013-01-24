@@ -4,9 +4,10 @@ class Menu:
     Root items are associated to it, and items associated to a root item.
     """
     def __init__(self):
-        self.items = {}
+        self.__by_name = {}
+        self.items = []
+        self.actions = []
         self.done = False
-        self.il = None
 
     def sort(self):
         """
@@ -14,11 +15,11 @@ class Menu:
         to the one requested from the modules.
         """
         self.done = True
-        self.items = self._order(self.items.values())
+        self.items = self.__order(self.__by_name.values())
         for root in self.items:
-            root.children = self._order(root.children)
+            root.children = self.__order(root.children)
 
-    def _order(self, items):
+    def __order(self, items):
         grouped = [[] for j in range(len(items))]
         ordered = []
         for i in items:
@@ -32,7 +33,13 @@ class Menu:
     def addRoot(self, item):
         if self.done:
             raise RuntimeError, 'Cannot add item to menu when already sorted'
-        self.items[item.label] = item
+        self.__by_name[item.name] = item
+    
+    def addAction(self, action):
+        self.actions.append(action)
+    
+    def rootByName(self, name):
+        return self.__by_name[name]
     
     def __repr__(self):
-        return '<Menu %d items>' %  (len(self.items),)
+        return '<Menu %d items>' %  (len(self.__items),)
