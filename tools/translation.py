@@ -5,8 +5,6 @@
 # First, write_map, then extract, init, (edit the po file in ./locale/<locale>/LC_MESSAGES/<domain>.po),
 #        compile, and after changes in the .pot file (if any) update.
 
-import cbpos, os, subprocess, logging
-
 class Translator(object):
     def __init__(self):
         self.locale_dir = './locale'
@@ -121,6 +119,9 @@ class Translator(object):
         return self.main()
 
 if __name__ == "__main__":
+    import sys, os
+    sys.path.append(os.getcwd())
+    import cbpos, os, subprocess, logging
     try:
         Translator().main()
     except KeyboardInterrupt:

@@ -20,3 +20,5 @@ default.sqlite
 build
 dist
 *.egg-info
+*.exe
+
