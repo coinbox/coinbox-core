@@ -60,7 +60,8 @@ def init():
     url = get_url()
     try:
         start(url)
-    except:
+    except Exception as e:
+        logger.exception(e)
         logger.error('Could not connect to database: %s' % (url,))
         return False
     else:
