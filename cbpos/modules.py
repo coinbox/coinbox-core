@@ -1,10 +1,8 @@
 import sys, os
 import pkgutil, importlib
 
-import logging
-logger = logging.getLogger(__name__)
-
 import cbpos
+logger = cbpos.get_logger(__name__)
 
 cbpos.config.set_default('mod', 'disabled_modules', '')
 cbpos.config.set_default('mod', 'modules_path', './cbpos/mod')

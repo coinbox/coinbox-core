@@ -1,9 +1,7 @@
-import cbpos
-
 import os
 
-import logging
-logger = logging.getLogger(__name__)
+import cbpos
+logger = cbpos.get_logger(__name__)
 
 class Resource(object):
     

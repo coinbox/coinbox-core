@@ -7,6 +7,8 @@ config = configuration.Config('coinbox.cfg')
 # Logging as specified in the configuration
 import cbpos.logger as logger
 logger.configure()
+# Use the get_logger method in case the logging method ever changes
+get_logger = logger.get_logger
 
 # Load PyDispatcher for signals functionality
 import pydispatch

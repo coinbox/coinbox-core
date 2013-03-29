@@ -3,10 +3,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.engine.url import URL
 
-import logging
-logger = logging.getLogger(__name__)
-
 import cbpos
+logger = cbpos.get_logger(__name__)
+
 from .profile import get_used_profile
 
 # Define default database configuration for different RDBMS's

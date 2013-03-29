@@ -3,10 +3,9 @@ __all__ = ('run', 'terminate', 'use_translation', 'load_database', 'break_init',
 import sys, os, argparse
 
 from pydispatch import dispatcher
-import logging
-logger = logging.getLogger(__name__)
 
 import cbpos
+logger = cbpos.get_logger(__name__)
 
 cbpos.config.set_default('app', 'fullscreen', '')
 cbpos.config.set_default('app', 'first_run', '1')
