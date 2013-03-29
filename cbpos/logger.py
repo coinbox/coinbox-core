@@ -6,6 +6,7 @@ import cbpos
 
 cbpos.config.set_default('app', 'log', 'INFO')
 cbpos.config.set_default('app', 'log_file', '')
+cbpos.config.set_default('app', 'log_use_colors', '')
 
 LEVELS = ('INFO', 'DEBUG', 'WARNING', 'WARN', 'ERROR', 'FATAL', 'CRITICAL')
 
@@ -24,25 +25,28 @@ def configure():
     filename = cbpos.config['app', 'log_file']
     filepath = os.path.realpath(filename) if filename != '' else None
     
+    use_colors = bool(cbpos.config['app', 'log_use_colors'])
+    
     root = logging.getLogger() 
     root.setLevel(level)
     
     # The standard format used for file logging and console logging
     log_format = '%(name)s: %(message)s (%(filename)s:%(lineno)s)'
+    long_log_format = '[%(levelname)s]\t'+log_format
     
     console = logging.StreamHandler()
     
     # Format with colors
-    if ColoredFormatter is not None:
+    if use_colors and ColoredFormatter is not None:
         console.setFormatter(ColoredFormatter(log_format))
     else:
-        console.setFormatter(logging.Formatter(log_format))
+        console.setFormatter(logging.Formatter(long_log_format))
     root.addHandler(console)
     
     if filepath:
         # Set up logging to a file
         fh = logging.FileHandler(filepath, 'w')
-        fh.setFormatter(logging.Formatter(log_format))
+        fh.setFormatter(logging.Formatter(long_log_format))
         root.addHandler(fh)
     
     # Log any signal from any sender
