@@ -1,4 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import division
+
 import sys, os, logging
 
 # Make symbolic links work
