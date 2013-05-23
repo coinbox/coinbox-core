@@ -3,6 +3,7 @@ __all__ = ('run', 'terminate', 'use_translation', 'load_database', 'break_init',
 import sys, os, argparse
 
 from pydispatch import dispatcher
+from babel import Locale
 
 import cbpos
 logger = cbpos.get_logger(__name__)
@@ -35,27 +36,49 @@ def parse_args():
 def init_translation(use=True):
     if not use:
         tr_builder = cbpos.DummyTranslatorBuilder()
+        cbpos.locale = Locale.default()
         
         logger.info("Translation disabled.")
     else:
+        # Read preferred settings from config file
         localedir = cbpos.config['locale', 'localedir']
-        languages = cbpos.config['locale', 'languages']
+        languages = [lang for lang in cbpos.config['locale', 'languages'].split(',') if lang]
         fallback = cbpos.config['locale', 'fallback'] == '1'
         codeset = cbpos.config['locale', 'codeset']
         class_ = None # No need for a custom GNUTranslation class
         
-        logger.debug("Using [%s](codeset:%s) for translation with fallback=%s in %s" % (languages, codeset, fallback, localedir))
+        logger.debug("gettext is using [{languages}](codeset:{codeset}) for translation with fallback={fallback} in {directory}".format(
+                    languages='Default Language' if not languages else ','.join(languages),
+                    codeset=codeset,
+                    fallback=fallback,
+                    directory=localedir)
+                     )
         
+        # Load gettext translations
         tr_builder = cbpos.TranslatorBuilder(localedir=os.path.abspath(localedir),
-                                           languages=None if languages == "" else languages.split(","),
+                                           languages=None if not languages else languages,
                                            class_=class_,
                                            fallback=fallback,
                                            codeset=codeset)
+        
+        # Load Babel localization tools
+        for lang in languages:
+            try:
+                locale = Locale.parse(lang)
+            except ValueError:
+                logger.debug('Babel did not recognize language {}'.format(lang))
+            else:
+                logger.debug('Babel is using language {}'.format(lang))
+                cbpos.locale = locale
+                break
+        else:
+            logger.debug('Babel is using default language')
+            cbpos.locale = Locale.default()
     
     cbpos.modules.init_translators(tr_builder)
     tr_builder.install()
 
-def terminate(retcode=1):
+def terminate(retcode=0):
     try:
         logger.info('Terminating application...')
     except:

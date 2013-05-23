@@ -20,6 +20,7 @@ res = Resource()
 # Load translation functionality
 from cbpos.translator import TranslatorBuilder, DummyTranslatorBuilder
 tr = None
+locale = None
 
 # Load extensible UI functionality
 from cbpos.uihandler import BaseUIHandler
