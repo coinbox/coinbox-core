@@ -3,7 +3,7 @@ __all__ = ('run', 'terminate', 'use_translation', 'load_database', 'break_init',
 import sys, os, argparse
 
 from pydispatch import dispatcher
-from babel import Locale
+from babel import Locale, UnknownLocaleError
 
 import cbpos
 logger = cbpos.get_logger(__name__)
@@ -67,14 +67,14 @@ def init_translation(use=True):
                 locale = Locale.parse(lang)
             except ValueError:
                 logger.debug('Babel did not understand locale {}'.format(repr(lang)))
-            except UnkownLocaleError:
+            except UnknownLocaleError:
                 logger.debug('Babel did not does not support locale {}'.format(repr(lang)))
             else:
-                logger.debug('Babel is using language {}'.format(lang))
+                logger.debug('Babel is using locale {}'.format(lang))
                 cbpos.locale = locale
                 break
         else:
-            logger.debug('Babel is using default language')
+            logger.debug('Babel is using default locale')
             
             # Use this language if no default can be found
             fallback_language = 'en'
@@ -88,7 +88,7 @@ def init_translation(use=True):
             except ValueError:
                 logger.debug('Babel did not understand locale {}'.format(repr(lang)))
                 cbpos.locale = Locale(fallback_language)
-            except UnkownLocaleError:
+            except UnknownLocaleError:
                 logger.debug('Babel did not does not support locale {}'.format(repr(lang)))
                 cbpos.locale = Locale(fallback_language)
     
