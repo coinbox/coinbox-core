@@ -4,8 +4,8 @@ import pkgutil, importlib
 import cbpos
 logger = cbpos.get_logger(__name__)
 
-cbpos.config.set_default('mod', 'disabled_modules', '')
-cbpos.config.set_default('mod', 'modules_path', './cbpos/mod')
+cbpos.config.set_default('mod', 'disabled_modules', list())
+cbpos.config.set_default('mod', 'modules_path', list())
 
 class BaseModuleLoader(object):
     """
@@ -155,8 +155,7 @@ def init():
     Load all modules, taking care of disabled and conflicting ones.
     """
     # Extract names of disabled modules from config
-    disabled_str = cbpos.config['mod', 'disabled_modules']
-    disabled_names = disabled_str.split(',') if disabled_str != '' else []
+    disabled_names = cbpos.config['mod', 'disabled_modules']
 
     if cbpos.config['mod', 'modules_path']:
         # Insert the module paths from config by making sure:
@@ -164,7 +163,7 @@ def init():
         # - the custom paths exist
         # - case-insensitive paths are taken into account
         modules_path = set([os.path.normcase(os.path.realpath(p)) \
-                            for p in cbpos.config['mod', 'modules_path'].split(':') \
+                            for p in cbpos.config['mod', 'modules_path'] \
                             if p and os.path.exists(p)] + \
                            
                            [os.path.normcase(os.path.realpath(p)) \

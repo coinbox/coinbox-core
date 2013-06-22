@@ -8,8 +8,8 @@ from babel import Locale, UnknownLocaleError
 import cbpos
 logger = cbpos.get_logger(__name__)
 
-cbpos.config.set_default('app', 'fullscreen', '')
-cbpos.config.set_default('app', 'first_run', '1')
+cbpos.config.set_default('app', 'fullscreen', False)
+cbpos.config.set_default('app', 'first_run', True)
 cbpos.config.set_default('app', 'ui_module', 'base')
 
 def parse_args():
@@ -34,16 +34,36 @@ def parse_args():
     return True
 
 def init_translation(use=True):
+    
+    def _babel_default():
+        logger.debug('Babel is using default locale')
+        
+        # Use this language if no default can be found
+        fallback_language = 'en'
+        
+        # Locale.default will raise an UnknownLocaleError if
+        # the environment variables are not set or set wrong
+        # This generally happens on Windows only
+        # See: http://babel.edgewall.org/ticket/98 
+        try:
+            cbpos.locale = Locale.default()
+        except ValueError:
+            logger.debug('Babel did not understand default locale')
+            cbpos.locale = Locale(fallback_language)
+        except UnknownLocaleError:
+            logger.debug('Babel did not does not support locale')
+            cbpos.locale = Locale(fallback_language)
+    
     if not use:
         tr_builder = cbpos.DummyTranslatorBuilder()
-        cbpos.locale = Locale.default()
+        _babel_default()
         
         logger.info("Translation disabled.")
     else:
         # Read preferred settings from config file
         localedir = cbpos.config['locale', 'localedir']
-        languages = [lang for lang in cbpos.config['locale', 'languages'].split(',') if lang]
-        fallback = cbpos.config['locale', 'fallback'] == '1'
+        languages = cbpos.config['locale', 'languages']
+        fallback = bool(cbpos.config['locale', 'fallback'])
         codeset = cbpos.config['locale', 'codeset']
         class_ = None # No need for a custom GNUTranslation class
         
@@ -74,23 +94,7 @@ def init_translation(use=True):
                 cbpos.locale = locale
                 break
         else:
-            logger.debug('Babel is using default locale')
-            
-            # Use this language if no default can be found
-            fallback_language = 'en'
-            
-            # Locale.default will raise an UnknownLocaleError if
-            # the environment variables are not set or set wrong
-            # This generally happens on Windows only
-            # See: http://babel.edgewall.org/ticket/98 
-            try:
-                cbpos.locale = Locale.default()
-            except ValueError:
-                logger.debug('Babel did not understand locale {}'.format(repr(lang)))
-                cbpos.locale = Locale(fallback_language)
-            except UnknownLocaleError:
-                logger.debug('Babel did not does not support locale {}'.format(repr(lang)))
-                cbpos.locale = Locale(fallback_language)
+            _babel_default()
     
     cbpos.modules.init_translators(tr_builder)
     tr_builder.install()
@@ -124,12 +128,12 @@ def run():
     if not parse_args():
         return
     
-    if cbpos.config['app', 'first_run'] or cbpos.config.empty():
+    if bool(cbpos.config['app', 'first_run']) or cbpos.config.empty():
         # Force configuration if configuration is empty.
         cbpos.config.save_defaults(overwrite=False)
         logger.info('First run. Saving configuration...')
     
-    locale_use = (cbpos.config['locale', 'use'] == '1')
+    locale_use = bool(cbpos.config['locale', 'use'])
     init_translation(use=(_use_translation and locale_use))
     
     if _load_database:
@@ -168,7 +172,7 @@ def run():
                 elif _break_init:
                     break
     
-    cbpos.config['app', 'first_run'] = ''
+    cbpos.config['app', 'first_run'] = False
     
     for mod in cbpos.modules.all_loaders():
         if mod.base_name == cbpos.config['app', 'ui_module']:

@@ -10,7 +10,7 @@ from .profile import get_used_profile
 
 # Define default database configuration for different RDBMS's
 cbpos.config.set_default('db', 'used', 'default')
-cbpos.config.set_default('db', 'echo', '')
+cbpos.config.set_default('db', 'echo', False)
 
 _session = None
 def session():

@@ -6,7 +6,7 @@ import cbpos
 
 cbpos.config.set_default('app', 'log', 'INFO')
 cbpos.config.set_default('app', 'log_file', '')
-cbpos.config.set_default('app', 'log_use_colors', '')
+cbpos.config.set_default('app', 'log_use_colors', False)
 
 LEVELS = ('INFO', 'DEBUG', 'WARNING', 'WARN', 'ERROR', 'FATAL', 'CRITICAL')
 

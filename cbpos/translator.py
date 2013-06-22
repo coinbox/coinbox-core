@@ -1,10 +1,10 @@
 import cbpos
 import gettext
 
-cbpos.config.set_default('locale', 'use', '1')
+cbpos.config.set_default('locale', 'use', True)
 cbpos.config.set_default('locale', 'localedir', './locale')
-cbpos.config.set_default('locale', 'languages', '')
-cbpos.config.set_default('locale', 'fallback', '1')
+cbpos.config.set_default('locale', 'languages', list())
+cbpos.config.set_default('locale', 'fallback', True)
 cbpos.config.set_default('locale', 'codeset', '')
 
 class TranslatorBuilder(object):
