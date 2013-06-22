@@ -2,7 +2,7 @@ __import__('pkg_resources').declare_namespace(__name__)
 
 # Configuration access
 import cbpos.configuration as configuration
-config = configuration.Config('coinbox.cfg')
+config = configuration.load()
 
 # Logging as specified in the configuration
 import cbpos.logger as logger
