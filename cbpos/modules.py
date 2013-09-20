@@ -12,40 +12,32 @@ class BaseModuleLoader(object):
     Abstract module loader from which all modules should have a subclass.
     Defines common actions that should take place when loading a module.
     """
-    name = None
-    dependencies = set()
-    config = []
-    version = 0
-    
-    def __init__(self, base_name):
-        self.base_name = base_name
-        if self.name is None:
-            self.name = self.base_name.title()
-        
-        self.dependencies = set(self.dependencies)
-        
-        for section, options in self.config:
-            for opt, val in options.iteritems():
-                cbpos.config.set_default(section, opt, val)
     
     def ui_handler(self):
         """
-        Defines a UI handler, an object responsible for setting up the UI and running it.
+        Defines a UI handler, an object responsible for setting up the UI
+        and running it.
         It should allow modules to interact with it.
         Based on the configuration, the UI handler of the chosen module will be
         assigned to cbpos.ui when loading the modules.  
         """
         return None
     
-    def load(self):
+    def load_models(self):
         """
         Loads the database models.
         """
         return []
     
-    def test(self):
+    def test_models(self):
         """
-        Adds dummy information to the database for test and demo purposes.
+        Create test models for the database.
+        """
+        pass
+    
+    def load_argparsers(self):
+        """
+        Add command line arguments and subparsers.
         """
         pass
     
@@ -61,12 +53,6 @@ class BaseModuleLoader(object):
         """
         return []
     
-    def argparser(self):
-        """
-        Parse the command line arguments.
-        """
-        pass
-    
     def init(self):
         """
         Perform arbitrary initial tasks.
@@ -75,15 +61,39 @@ class BaseModuleLoader(object):
         """
         return True
     
-    def __lt__(self, mod):
-        """
-        Implements the '<' comparison operator.
-        Used when sorting the list of modules by dependencies.
-        """
-        return (self.base_name in mod.dependencies)
-    
     def __repr__(self):
         return '<ModuleLoader %s>' % (self.base_name,)
+
+class BaseModuleMetadata(object):
+    """
+    Abstract module metadata from which all modules should have a subclass.
+    Defines attributes related to the module itself and its relation to
+    the core and other modules.
+    """
+    has_ui_handler = False
+    
+    @property
+    def base_name(self):
+        raise NotImplementedError("Base name of module not defined")
+    
+    @property
+    def version(self):
+        raise NotImplementedError("Version of module not defined")
+    
+    @property
+    def display_name(self):
+        raise NotImplementedError("Display name of module not defined")
+    
+    @property
+    def dependencies(self):
+        raise NotImplementedError("Dependencies of module not defined")
+    
+    @property
+    def config_defaults(self):
+        raise NotImplementedError("Config defaults of module not defined")
+    
+    def __repr__(self):
+        return '<ModuleMetadata %s>' % (self.base_name,)
 
 class ModuleWrapper(object):
     """
@@ -92,31 +102,39 @@ class ModuleWrapper(object):
     """
     def __init__(self, package):
         self.package = package
-        self.name = package[1]
+        self.base_name = package[1]
         
         self.loader = None
+        self.metadata = None
         self.disabled = False
         self.missing_dependency = False
-        
-        global modules
-        modules[self.name] = self
 
     def load(self):
         """
         Load the module's package and initialize the ModuleLoader class. 
         """
         if self.disabled:
-            return False
-        self.top_module = importlib.import_module('cbpos.mod.'+self.name)
+            raise TypeError("Cannot load a disabled module")
+        self.top_module = importlib.import_module('cbpos.mod.'+self.base_name)
         if self.top_module is None:
-            self.loader = None
-            return False
+            raise ImportError("Top module not found")
+        
         try:
-            self.loader = self.top_module.ModuleLoader(self.name)
+            self.loader = self.top_module.ModuleLoader()
         except AttributeError:
-            self.loader = None
-            return False
-        return True
+            raise ImportError("Module loader not found")
+        
+        try:
+            self.metadata = self.top_module.ModuleMetadata()
+        except AttributeError:
+            raise ImportError("Module metadata not found")
+        else:
+            if self.metadata.base_name != self.base_name:
+                raise ImportError("Module metadata basename for {} is incorrect".format(self.base_name))
+        
+        self.loader.base_name = self.base_name
+        self.loader.metadata = self.metadata
+        self.metadata.loader = self.loader
     
     def disable(self, missing_dependency=False):
         """
@@ -126,7 +144,19 @@ class ModuleWrapper(object):
             return
         self.disabled = True
         self.missing_dependency = missing_dependency
-        sys.modules['cbpos.mod.'+self.name] = None
+        
+        # Disable the import statements
+        sys.modules['cbpos.mod.'+self.base_name] = None
+    
+    def set_config_defaults(self):
+        """
+        Set the config defaults for this module, from the metadata object.
+        """
+        if not self.metadata:
+            raise ValueError('No metadata found. Cannot set config defaults.')
+        for (section, options) in self.metadata.config_defaults:
+            for opt, val in options.iteritems():
+                cbpos.config.set_default(section, opt, val)
     
     @property
     def res_path(self):
@@ -135,154 +165,257 @@ class ModuleWrapper(object):
         Only to be used when working with the modules themselves.
         Otherwise, use `cbpos.res.NAME('/path/to/resource')`.  
         """
-        return getattr(cbpos.res, self.name)('')
-    
-    def __lt__(self, other):
-        """
-        Implements the '<' comparison operator.
-        Used when sorting the list of modules by dependencies.
-        """
-        return self.loader is not None and other.loader is not None and self.loader<other.loader
+        return getattr(cbpos.res, self.base_name)('')
     
     def __repr__(self):
-        return '<ModuleWrapper %s>' % (self.name,)
+        return '<ModuleWrapper %s>' % (self.base_name,)
 
-modules = {}
-missing = set()
-
-def init():
-    """
-    Load all modules, taking care of disabled and conflicting ones.
-    """
-    # Extract names of disabled modules from config
-    disabled_names = cbpos.config['mod', 'disabled_modules']
-
-    if cbpos.config['mod', 'modules_path']:
-        # Insert the module paths from config by making sure:
-        # - there are no duplicates (set)
-        # - the custom paths exist
-        # - case-insensitive paths are taken into account
+class ModuleInitializer(object):
+    def __init__(self):
+        self.wrappers = {}
+        self.missing = set()
+        self.packages = []
+        
+        # Extract names of disabled modules from config
+        self.disabled_names = cbpos.config['mod', 'disabled_modules']
+        
+        self.update_path(cbpos.config['mod', 'modules_path'])
+    
+    def run(self):
+        """
+        Load all modules, taking care of disabled and conflicting ones.
+        """
+        
+        logger.debug('Loading modules...')
+        logger.debug('Path ({}): {}'.format(len(self.path), repr(self.path)))
+        
+        try:
+            if not sys.frozen: # if not frozen, sys.frozen raises AttributeError
+                raise AttributeError
+        except AttributeError:
+            pass
+        else:
+            # Try to find the packages frozen in the executable with PyInstaller
+            try:
+                import pyi_importers
+            except ImportError:
+                logger.warn('App is frozen but pyi_importers is not available')
+            else:
+                # Find FrozenImporter object from sys.meta_path.
+                importer = None
+                for obj in sys.meta_path:
+                    if isinstance(obj, pyi_importers.FrozenImporter):
+                        importer = obj
+                        break
+    
+                for name in importer.toc:
+                    p = name.split('.')
+                    if len(p) == 3 and p[0] == 'cbpos' and p[1] == 'mod':
+                        self.packages.append((importer, p[2], True)) # The first and 3rd arguments are ignored
+        
+        # Package with names starting with '_' are ignored
+        self.packages += [p for p in pkgutil.walk_packages(self.path) \
+                          if not p[1].startswith('_') and p[2]]
+        
+        for pkg in self.packages:
+            wrap = ModuleWrapper(pkg)
+            
+            self.wrappers[wrap.base_name] = wrap
+            
+            # Check if disabled
+            if wrap.base_name in self.disabled_names:
+                logger.debug('Module {} is disabled.'.format(wrap.base_name))
+                wrap.disable()
+                continue
+            
+            # Try to load the module
+            logger.debug('Loading module {}...'.format(wrap.base_name))
+            try:
+                wrap.load()
+            except ImportError:
+                logger.warn('Invalid module {}.'.format(wrap.base_name))
+                wrap.disable()
+                continue
+            except:
+                logger.exception('Failed loading {}'.format(wrap.base_name))
+                logger.warn('Invalid module {}.'.format(wrap.base_name))
+                wrap.disable()
+                continue
+            
+            wrap.set_config_defaults()
+        
+        self.check_dependencies()
+        
+        logger.debug('({}) modules found: {}'.format(
+                    len(self.ordered_wrappers),
+                    ', '.join(w.base_name for w in self.ordered_wrappers))
+                     )
+        
+        logger.debug('({}) modules disabled: {}'.format(
+                    len(self.disabled_wrappers),
+                    ', '.join(m.base_name for m in self.disabled_wrappers))
+                     )
+        
+        logger.warn('({}) modules disabled for missing dependencies: {}'.format(
+                    len(self.missing),
+                    ', '.join(name for name in self.missing))
+                    )
+    
+    def check_dependencies(self):
+        logger.debug('Checking module dependencies...')
+        from collections import defaultdict
+        conflicting = []
+        self.dependent_on = defaultdict(list)
+        
+        for wrap in self.wrappers.itervalues():
+            if wrap.disabled:
+                continue
+            for dep in wrap.metadata.dependencies:
+                dep_base_name, dep_version = dep
+                try:
+                    dep_wrap = self.wrappers[dep_base_name]
+                except KeyError:
+                    # Module not found
+                    conflicting.append(wrap)
+                else:
+                    if dep_wrap.disabled:
+                        # Dependency disabled
+                        conflicting.append(wrap)
+                    elif not self.version_match(dep_wrap, dep_version):
+                        # Version does not match
+                        conflicting.append(wrap)
+                        self.missing.add(wrap.base_name)
+                    else:
+                        self.dependent_on[dep_wrap.base_name].append(wrap)
+        
+        def resolve_conflict(wrap):
+            if wrap.disabled:
+                return
+            wrap.disable(missing_dependency=True)
+            for w in self.dependent_on[wrap.base_name]:
+                resolve_conflict(w)
+        
+        for wrap in conflicting:
+            resolve_conflict(wrap)
+        
+        self.ordered_wrappers = self.sorted_wrappers(self.wrappers.itervalues())
+        self.disabled_wrappers = [w for w in self.ordered_wrappers if w.disabled]
+    
+    def sorted_wrappers(self, wrappers):
+        ordered = list(wrappers)
+        for i in xrange(len(ordered)):
+            for j in xrange(i+1, len(ordered)):
+                if self.wrap_cmp(ordered[i], ordered[j]) > 0:
+                    ordered[i], ordered[j] = ordered[j], ordered[i]
+        return ordered
+        # The built-in `sorted` does not do the job, it must use another algo
+        # It happened that some were not properly ordered
+        # So we have to use a custom algorithm to sort it
+        #return sorted(self.wrappers.values(), cmp=self.wrap_cmp)
+    
+    def wrap_cmp(self, w1, w2):
+        W1_COMES_FIRST, W2_COMES_FIRST, DOES_NOT_MATTER = -1, 1, 0
+        
+        if w1.disabled and w2.disabled:
+            return DOES_NOT_MATTER
+        elif w1.disabled:
+            return W2_COMES_FIRST
+        elif w2.disabled:
+            return W1_COMES_FIRST
+        
+        elif w2 in self.dependent_on[w1.base_name] and w1 in self.dependent_on[w2.base_name]:
+            return DOES_NOT_MATTER
+        elif w2 in self.dependent_on[w1.base_name]:
+            return W1_COMES_FIRST
+        elif w1 in self.dependent_on[w2.base_name]:
+            return W2_COMES_FIRST
+        
+        else:
+            return DOES_NOT_MATTER
+    
+    def version_match(self, wrap, target_version):
+        # Actual version
+        a_parts = wrap.metadata.version.split('-', 2)
+        if len(a_parts) == 2:
+            a_version, a_build = a_parts
+        else:
+            a_version, a_build = a_parts[0], None
+        a_version = a_version.split('.', 3)
+        
+        # Target version
+        t_parts = target_version.split('-', 2)
+        if len(t_parts) == 2:
+            t_version, t_build = t_parts
+        else:
+            t_version, t_build = t_parts[0], None
+        t_version = t_version.split('.', 3)
+        
+        # Build should match, if available
+        if t_build != a_build:
+            return False
+        
+        # All the target version parts should match
+        for i, v in enumerate(t_version):
+            try:
+                if a_version[i] != v:
+                    return False
+            except IndexError:
+                return False
+        
+        return True
+    
+    def update_path(self, values):
+        """
+        Insert the module paths from config by making sure:
+         - there are no duplicates (set)
+         - the custom paths exist
+         - case-insensitive paths are taken into account
+        """
+        values = [] if values is None else values
+        
         modules_path = set([os.path.normcase(os.path.realpath(p)) \
-                            for p in cbpos.config['mod', 'modules_path'] \
-                            if p and os.path.exists(p)] + \
+                            for p in values if p and os.path.exists(p)] + \
                            
                            [os.path.normcase(os.path.realpath(p)) \
                             for p in cbpos.mod.__path__])
+        
         cbpos.mod.__path__ = list(modules_path)
-    
-    logger.debug('Loading modules...')
-    p = path()
-    logger.debug('Path ({}): {}'.format(len(p), repr(p)))
-    
-    # Package with names starting with '_' are ignored
-    packages = []
-    try:
-        if not sys.frozen: # if not frozen, sys.frozen raises AttributeError
-            raise AttributeError
-    except AttributeError:
-        pass
-    else:
-        # Try to find the packages frozen in the executable with PyInstaller
-        try:
-            import pyi_importers
-        except ImportError:
-            logger.warn('App is frozen but pyi_importers is not available')
-        else:
-            # Find FrozenImporter object from sys.meta_path.
-            importer = None
-            for obj in sys.meta_path:
-                if isinstance(obj, pyi_importers.FrozenImporter):
-                    importer = obj
-                    break
-
-            for name in importer.toc:
-                p = name.split('.')
-                if len(p) == 3 and p[0] == 'cbpos' and p[1] == 'mod':
-                    packages.append((importer, p[2], True)) # The first and 3rd arguments are ignored
-    packages += [p for p in pkgutil.walk_packages(path()) if not p[1].startswith('_') and p[2]]
-    
-    for pkg in packages:
-        mod = ModuleWrapper(pkg)
-        if mod.name in disabled_names:
-            logger.debug('Module %s is disabled.' % (mod.name,))
-            mod.disable()
-            continue
-        logger.debug('Loading module %s...' % (mod.name,))
-        if not mod.load():
-            logger.warn('Invalid module %s' % (mod.name,))
-    logger.debug('(%d) modules found: %s' % (len(modules), ', '.join(m.name for m in all_modules())))
-    
-    disabled = list(disabled_modules()) 
-    if len(disabled) > 0:
-        logger.debug('(%d) modules disabled: %s' % (len(disabled), ', '.join(m.name for m in disabled)))
-    
-    check_dependencies()
-    
-    if len(missing) > 0:
-        logger.warn('(%d) modules disabled for missing dependencies: %s' % (len(missing), ', '.join(name for name in missing)))
-
-def check_dependencies():
-    logger.debug('Checking module dependencies...')
-    conflict = set()
-    missing = set()
-    module_names = set(k for k, m in modules.iteritems() if not m.disabled)
-    for m in enabled_modules():
-        diff = m.loader.dependencies-module_names
-        if diff:
-            logger.warn('Missing dependencies for module %s: %s' % (m.name, ', '.join(diff)))
-            conflict.add(m)
-            missing.update(diff)
-    
-    def all_conflicted(con):
-        for m1 in con:
-            yield m1
-            for m2 in all_conflicted(set(m for m in enabled_modules() if m1.name in m.loader.dependencies)):
-                yield m2
-    
-    for m in all_conflicted(conflict):
-        m.disable(missing_dependency=True)
-
-def depsort(ls):
-    """
-    Sorts modules such that no module comes before its dependencies in the list.
-    Note: it will fail to do so when circular dependencies between modules are present.
-    """
-    sorted_ls = []
-    for m1 in ls:
-        for i, m2 in enumerate(sorted_ls[:]):
-            if m1<m2:
-                sorted_ls.insert(i, m1)
-                break
-        else:
-            sorted_ls.append(m1)
-    return sorted_ls
+        self.path = cbpos.mod.__path__
+        return self.path
 
 # Helper functions
 
+initializer = None
+def init():
+    global initializer
+    initializer = ModuleInitializer()
+    return initializer.run()
+
 def path():
-    import cbpos.mod
-    return cbpos.mod.__path__
+    assert initializer is not None
+    return initializer.path
 
 def is_installed(module_name):
-    return module_name in modules
+    return module_name in initializer.wrappers
 
 def is_enabled(module_name):
-    return is_installed(module_name) and not modules[module_name].disabled
+    return is_installed(module_name) and \
+        not initializer.wrappers[module_name].disabled
 
-def all_modules():
-    return depsort(modules.itervalues())
+def all_wrappers():
+    return initializer.ordered_wrappers
 
 def by_name(module_name):
-    return modules[module_name]
+    return initializer.wrappers[module_name]
 
-def disabled_modules():
-    return depsort(m for m in modules.itervalues() if m.disabled)
+def disabled_wrappers():
+    return [w for w in initializer.ordered_wrappers if w.disabled]
 
-def enabled_modules():
-    return depsort(m for m in modules.itervalues() if not m.disabled)
+def enabled_wrappers():
+    return [w for w in initializer.ordered_wrappers if not w.disabled]
 
 def all_loaders():
-    return depsort(m.loader for m in modules.itervalues() if not m.disabled)
+    return [w.loader for w in initializer.ordered_wrappers if not w.disabled]
 
 # TRANSLATORS
 
@@ -295,10 +428,10 @@ def init_resources(res):
         res.add(mod.base_name)
 
 # ARGUMENT PARSERS
-def parse_args():
+def load_argparsers():
     for mod in all_loaders():
-        logger.debug('Parsing command-line arguments for %s' % (mod.base_name,))
-        mod.argparser()
+        logger.debug('Adding command-line parsers for %s', mod.base_name)
+        mod.load_argparsers()
 
 # DATABASE EXTENSION
 
@@ -307,9 +440,9 @@ def load_database():
     Load all the database models of every module so that they can be used with SQLAlchemy.
     """
     for mod in all_loaders():
-        logger.debug('Loading DB models for %s' % (mod.base_name,))
-        models = mod.load()
-        logger.debug('%d found.' % (len(models),))
+        logger.debug('Loading DB models for %s', mod.base_name)
+        models = mod.load_models()
+        logger.debug('%d found.', len(models))
 
 def config_database():
     """
@@ -327,8 +460,8 @@ def config_test_database():
     """
     logger.debug('Adding test values to database...')
     for mod in all_loaders():
-        logger.debug('Adding test values for %s' % (mod.base_name,))
-        mod.test()
+        logger.debug('Adding test values for %s', mod.base_name)
+        mod.test_models()
 
 # INTERFACE EXTENSION
 
@@ -340,7 +473,7 @@ def extend_interface(menu):
     roots = []
     items = []
     for mod in all_loaders():
-        logger.debug('Loading menu for module %s...' % (mod.base_name,))
+        logger.debug('Loading menu for module %s...', mod.base_name)
         mod_roots, mod_items = mod.menu()
         roots.extend(mod_roots)
         items.extend(mod_items)
@@ -348,10 +481,10 @@ def extend_interface(menu):
     [r.attach(menu) for r in roots]
     [i.attach(menu) for i in items]
 
-    logger.debug('Menu roots (%d) and menu items (%d).' % (len(roots), len(items)))
+    logger.debug('Menu roots (%d) and menu items (%d).', len(roots), len(items))
 
     for mod in all_loaders():
-        logger.debug('Loading actions for module %s...' % (mod.base_name,))
+        logger.debug('Loading actions for module %s...', mod.base_name)
         [a.attach(menu) for a in mod.actions()]
 
-    logger.debug('Actions (%d).' % (len(menu.actions),))
+    logger.debug('Actions (%d).', len(menu.actions))

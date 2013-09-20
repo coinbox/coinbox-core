@@ -1,4 +1,5 @@
-__all__ = ('run', 'terminate', 'use_translation', 'load_database', 'break_init', 'set_ui_handler', 'load_menu')
+__all__ = ('run', 'terminate', 'use_translation', 'load_database', 'break_init',
+           'set_ui_handler', 'load_menu')
 
 import sys, os, argparse
 
@@ -16,15 +17,15 @@ def parse_args():
     # TODO: Careful!! We are using another version of argparse that does not ship with Python2.7
     # (I think it does with Python3.1) So there is a file called argparse.py
     # You will not be able to run the app without it.
-    logger.debug('Parsing arguments. argparse is version ' + argparse.__version__)
-    logger.debug('Loaded from ' + argparse.__file__)
+    logger.debug('Parsing arguments. argparse is version %s', argparse.__version__)
+    logger.debug('Loaded from %s', argparse.__file__)
     
     cbpos.parser = argparse.ArgumentParser(description=cbpos.description)
     
     cbpos.subparsers = cbpos.parser.add_subparsers(dest='subparser_name')
     
     # Load module-specific command-line arguments
-    cbpos.modules.parse_args()
+    cbpos.modules.load_argparsers()
     
     cbpos.args = cbpos.parser.parse_args()
     
@@ -67,30 +68,34 @@ def init_translation(use=True):
         codeset = cbpos.config['locale', 'codeset']
         class_ = None # No need for a custom GNUTranslation class
         
-        logger.debug("gettext is using [{languages}](codeset:{codeset}) for translation with fallback={fallback} in {directory}".format(
-                    languages='Default Language' if not languages else ','.join(languages),
+        logger.debug("gettext is using [{languages}](codeset:{codeset}) for "
+                     "translation with fallback={fallback} "
+                     "in {directory}".format(
+                    languages=','.join(languages) if languages else 'default',
                     codeset=codeset,
                     fallback=fallback,
                     directory=localedir)
                      )
         
         # Load gettext translations
-        tr_builder = cbpos.TranslatorBuilder(localedir=os.path.abspath(localedir),
-                                           languages=None if not languages else languages,
-                                           class_=class_,
-                                           fallback=fallback,
-                                           codeset=codeset)
+        tr_builder = cbpos.TranslatorBuilder(
+            localedir=os.path.abspath(localedir),
+            languages=None if not languages else languages,
+            class_=class_,
+            fallback=fallback,
+            codeset=codeset
+        )
         
         # Load Babel localization tools
         for lang in languages:
             try:
                 locale = Locale.parse(lang)
             except ValueError:
-                logger.debug('Babel did not understand locale {}'.format(repr(lang)))
+                logger.debug('Babel does not understand locale %s', repr(lang))
             except UnknownLocaleError:
-                logger.debug('Babel did not does not support locale {}'.format(repr(lang)))
+                logger.debug('Babel does not support locale %s', repr(lang))
             else:
-                logger.debug('Babel is using locale {}'.format(lang))
+                logger.debug('Babel is using locale %s', repr(lang))
                 cbpos.locale = locale
                 break
         else:
@@ -112,7 +117,7 @@ def run():
     """
     global _ui_handler, _use_translation, _load_database, _load_menu, _break_init
     
-    logger.info('Python: %s' % (sys.version,))
+    logger.info('Python: %s', sys.version)
 
     logger.debug('Importing database...')
     import cbpos.database
@@ -158,16 +163,16 @@ def run():
         logger.debug('Initializing modules...')
         # Initiate every installed module
         for mod in cbpos.modules.all_loaders():
-            logger.debug('Initializing module %s' % (mod.base_name,))
+            logger.debug('Initializing module %s', mod.base_name)
             try:
                 init = mod.init()
             except Exception as e:
-                logger.fatal('Initializing module %s failed.' % (mod.base_name,))
+                logger.fatal('Initializing module %s failed.', mod.base_name)
                 logger.exception(e)
                 return False
             else:
                 if not init:
-                    logger.fatal('Initializing module %s failed.' % (mod.base_name,))
+                    logger.fatal('Initializing module %s failed.', mod.base_name)
                     return False
                 elif _break_init:
                     break
