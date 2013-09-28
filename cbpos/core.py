@@ -133,7 +133,14 @@ def run():
     if not parse_args():
         return
     
+    # Check if it is the first run of the app
     if bool(cbpos.config['app', 'first_run']) or cbpos.config.empty():
+        cbpos.config['app', 'first_run'] = False
+        cbpos.first_run = True
+    else:
+        cbpos.first_run = False
+    
+    if cbpos.first_run:
         # Force configuration if configuration is empty.
         cbpos.config.save_defaults(overwrite=False)
         logger.info('First run. Saving configuration...')
@@ -176,8 +183,6 @@ def run():
                     return False
                 elif _break_init:
                     break
-    
-    cbpos.config['app', 'first_run'] = False
     
     for mod in cbpos.modules.all_loaders():
         if mod.base_name == cbpos.config['app', 'ui_module']:

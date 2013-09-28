@@ -43,5 +43,8 @@ subparsers = None
 args = None
 description = 'Launch coinbox POS'
 
+# First run flag, set when the application is run in `core.run`
+first_run = False
+
 # Load the core to the namespace
 from cbpos.core import *
