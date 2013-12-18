@@ -256,10 +256,11 @@ class ModuleInitializer(object):
                     ', '.join(m.base_name for m in self.disabled_wrappers))
                      )
         
-        logger.warn('({}) modules disabled for missing dependencies: {}'.format(
-                    len(self.missing),
-                    ', '.join(name for name in self.missing))
-                    )
+        if len(self.missing) > 0:
+            logger.warn('({}) modules disabled for missing dependencies: {}'.format(
+                        len(self.missing),
+                        ', '.join(name for name in self.missing))
+                        )
     
     def check_dependencies(self):
         logger.debug('Checking module dependencies...')
@@ -277,14 +278,16 @@ class ModuleInitializer(object):
                 except KeyError:
                     # Module not found
                     conflicting.append(wrap)
+                    logger.warn('Module {} requires module {} but it was not found'.format(wrap.base_name, dep_base_name))
                 else:
                     if dep_wrap.disabled:
                         # Dependency disabled
                         conflicting.append(wrap)
+                        logger.warn('Module {} requires module {} but it is disabled'.format(wrap.base_name, dep_base_name))
                     elif not self.version_match(dep_wrap, dep_version):
                         # Version does not match
                         conflicting.append(wrap)
-                        self.missing.add(wrap.base_name)
+                        logger.warn('Module {} requires module {} but its version does not match'.format(wrap.base_name, dep_base_name))
                     else:
                         self.dependent_on[dep_wrap.base_name].append(wrap)
         
@@ -292,6 +295,7 @@ class ModuleInitializer(object):
             if wrap.disabled:
                 return
             wrap.disable(missing_dependency=True)
+            self.missing.add(wrap.base_name)
             for w in self.dependent_on[wrap.base_name]:
                 resolve_conflict(w)
         
