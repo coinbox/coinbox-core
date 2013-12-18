@@ -11,7 +11,7 @@ setup(
       namespace_packages=['cbpos', 'cbpos.mod'],
       include_package_data=True,
       
-      install_requires=['sqlalchemy>=0.7'],
+      install_requires=['sqlalchemy>=0.7','PyDispatcher>=2.0.3','ProxyTypes>=0.9','Babel==0.9.6'],
       
       author='Coinbox POS Team',
       author_email='coinboxpos@googlegroups.com',
