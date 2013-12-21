@@ -10,6 +10,8 @@ import sys, os, logging
 cbpos = None
 try:
     import cbpos
+    from cbpos.bootstrap import bootstrap
+    bootstrap()
     cbpos.run()
 except KeyboardInterrupt:
     pass

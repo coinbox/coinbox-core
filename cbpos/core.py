@@ -36,6 +36,8 @@ def parse_args():
 
 def init_translation(use=True):
     
+    from cbpos.translator import TranslatorBuilder, DummyTranslatorBuilder
+    
     def _babel_default():
         logger.debug('Babel is using default locale')
         
@@ -56,7 +58,7 @@ def init_translation(use=True):
             cbpos.locale = Locale(fallback_language)
     
     if not use:
-        tr_builder = cbpos.DummyTranslatorBuilder()
+        tr_builder = DummyTranslatorBuilder()
         _babel_default()
         
         logger.info("Translation disabled.")
@@ -78,7 +80,7 @@ def init_translation(use=True):
                      )
         
         # Load gettext translations
-        tr_builder = cbpos.TranslatorBuilder(
+        tr_builder = TranslatorBuilder(
             localedir=os.path.abspath(localedir),
             languages=None if not languages else languages,
             class_=class_,
