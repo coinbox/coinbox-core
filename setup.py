@@ -4,7 +4,7 @@ setup(
       name="Coinbox POS",
       version="0.1",
       packages=find_packages()+['argparse'],
-      scripts=['coinbox.py'],
+      scripts=['coinbox'],
       
       zip_safe=True,
       
