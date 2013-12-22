@@ -61,7 +61,7 @@ DRIVERS = {'sqlite': SQLiteDriver(), 'mysql': MySQLDriver(), 'postgresql': Postg
            'firebird': FirebirdDriver(), 'mssql': MsSQLDriver()}
 
 def get_driver(driver_name):
-    return DRIVERS[driver_name] 
+    return DRIVERS[driver_name.split("+", 1)[0]] 
 
 def all_drivers():
     return DRIVERS.values()

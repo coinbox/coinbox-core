@@ -4,9 +4,14 @@ from .driver import get_driver
 class Profile(object):
     def __init__(self, name, driver, host=None, port=None,
                  username=None, password=None, database=None,
-                 query=None):
+                 query=None, drivername=None):
         self.name = self._name = name
+        
         self.driver = driver
+        self.drivername = drivername # Could be different than driver.name, e.g. "mysql" or "mysql+pymysql"
+        
+        if not self.drivername:
+            self.drivername = self.driver.name
         
         self.host = host
         self.port = port
@@ -50,14 +55,12 @@ class Profile(object):
             pass
         cbpos.config.save()
     
-    _options = ('host', 'port', 'username', 'password', 'database', 'query')
+    _options = ('host', 'port', 'username', 'password', 'database', 'query', 'drivername')
     def __iter__(self):
-        L = [('drivername', self.driver.name)]
         for s in self._options:
             v = getattr(self, s)
             if v is not None:
-                L.append((s, v))
-        return iter(L)
+                yield (s, v)
     
     def __repr__(self):
         return '<Profile %s>' % (self.name,)
