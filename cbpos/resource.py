@@ -11,8 +11,9 @@ class Resource(object):
 class ResourceGetter(object):
     def __init__(self, name):
         self.name = name
+        self.__full_name = 'cbmod.'+self.name
     
     def __call__(self, path):
         import pkg_resources
         p = os.path.join('res', path.strip('/'))
-        return pkg_resources.resource_filename('cbpos.mod.'+self.name, p)
+        return pkg_resources.resource_filename(self.__full_name, p)

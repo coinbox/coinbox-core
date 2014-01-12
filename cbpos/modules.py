@@ -1,7 +1,7 @@
 import sys, os
 import pkgutil, importlib
 
-import cbpos
+import cbpos, cbmod
 logger = cbpos.get_logger(__name__)
 
 cbpos.config.set_default('mod', 'disabled_modules', list())
@@ -115,7 +115,7 @@ class ModuleWrapper(object):
         """
         if self.disabled:
             raise TypeError("Cannot load a disabled module")
-        self.top_module = importlib.import_module('cbpos.mod.'+self.base_name)
+        self.top_module = importlib.import_module('cbmod.'+self.base_name)
         if self.top_module is None:
             raise ImportError("Top module not found")
         
@@ -146,7 +146,7 @@ class ModuleWrapper(object):
         self.missing_dependency = missing_dependency
         
         # Disable the import statements
-        sys.modules['cbpos.mod.'+self.base_name] = None
+        sys.modules['cbmod.'+self.base_name] = None
     
     def set_config_defaults(self):
         """
@@ -210,7 +210,7 @@ class ModuleInitializer(object):
     
                 for name in importer.toc:
                     p = name.split('.')
-                    if len(p) == 3 and p[0] == 'cbpos' and p[1] == 'mod':
+                    if len(p) == 2 and p[0] == 'cbmod': # Only match the pattern `cbmod.[modname]`
                         self.packages.append((importer, p[2], True)) # The first and 3rd arguments are ignored
         
         # Package with names starting with '_' are ignored
@@ -381,10 +381,10 @@ class ModuleInitializer(object):
                             for p in values if p and os.path.exists(p)] + \
                            
                            [os.path.normcase(os.path.realpath(p)) \
-                            for p in cbpos.mod.__path__])
+                            for p in cbmod.__path__])
         
-        cbpos.mod.__path__ = list(modules_path)
-        self.path = cbpos.mod.__path__
+        cbmod.__path__ = list(modules_path)
+        self.path = cbmod.__path__
         return self.path
 
 # Helper functions

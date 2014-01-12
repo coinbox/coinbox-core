@@ -30,7 +30,7 @@ def bootstrap():
     import cbpos.database
     
     # Load module manipulation functionality
-    import cbpos.mod
+    import cbmod
     import cbpos.modules
     
     # Menu items and actions
