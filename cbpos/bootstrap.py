@@ -1,7 +1,21 @@
-def bootstrap():
+def bootstrap(config_dir=None, data_dir=None, locale_dir=None):
+    # Determine environment and act accordingly
+    import cbpos.environ
+    env = cbpos.environ.guess_environ()
+    if env is None:
+        warnings.warn('We could not guess what environment Coinbox is in! '
+                      'It would be better if config_dir,data_dir,locale_dir '
+                      'were explicitly specified'
+                      )
+        env = cbpos.environ.get_fallback()
+    
     # Configuration access
     import cbpos.configuration
-    cbpos.config = cbpos.configuration.load()
+    cbpos.config = cbpos.configuration.load(
+        config_dir=config_dir or env.default_config_dir,
+        data_dir=data_dir or env.default_data_dir,
+        locale_dir=locale_dir or env.default_locale_dir
+    )
     
     # Logging as specified in the configuration
     import cbpos.logger
@@ -10,11 +24,12 @@ def bootstrap():
     cbpos.get_logger = cbpos.logger.get_logger
     
     # Load PyDispatcher for signals functionality
+    # TODO: use a procy function, like that of get_logger: simplifies imports and safer in case it changes
     import pydispatch
     
     # Resources system to access files for each module
-    from cbpos.resource import Resource
-    cbpos.res = Resource()
+    import cbpos.resource
+    cbpos.resource.configure()
     
     # Load translation functionality
     import cbpos.translator

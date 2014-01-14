@@ -17,3 +17,7 @@ class ResourceGetter(object):
         import pkg_resources
         p = os.path.join('res', path.strip('/'))
         return pkg_resources.resource_filename(self.__full_name, p)
+
+def configure():
+    # TODO: how do we use data_dir?
+    cbpos.res = Resource()
