@@ -1,0 +1,24 @@
+# TODO: Needs to be updated to HEAD on the maser branch with the new egg names
+Babel==1.3
+-e git+https://github.com/coinbox/coinbox-core.git@6d3718ec38b12365d17bbb3c011be4425765bef6#egg=Coinbox_POS-setup
+-e git+https://github.com/coinbox/coinbox-mod-base.git@37dc069f8b034e4aed6840be931805461ab3b39d#egg=Coinbox_mod_base-setup
+-e git+https://github.com/coinbox/coinbox-mod-auth.git@93f65b2e7100c8487cb160a42d6f31725164796e#egg=CoinboxMod_auth-setup
+-e git+https://github.com/coinbox/coinbox-mod-base.git@37dc069f8b034e4aed6840be931805461ab3b39d#egg=CoinboxMod_base-setup
+-e git+https://github.com/coinbox/coinbox-mod-config.git@d110705ad2da35c57edecaea37aa1021ccbfa8e6#egg=CoinboxMod_config-setup
+-e git+https://github.com/coinbox/coinbox-mod-currency.git@04db8f1d903eba096e7871dcae3b287401bda649#egg=CoinboxMod_currency-setup
+-e git+https://github.com/coinbox/coinbox-mod-customer.git@c440aca99b492699f4c0ca847a7379c5d6ae2ffd#egg=CoinboxMod_customer-setup
+-e git+https://github.com/coinbox/coinbox-mod-installer.git@edbef61ade772943118e0b311b6f346da0d536b8#egg=CoinboxMod_installer-setup
+-e git+https://github.com/coinbox/coinbox-mod-sales.git@07ac9cd0a1a1444a54804c04ba8f02d69956e87d#egg=CoinboxMod_sales-setup
+-e git+https://github.com/coinbox/coinbox-mod-stock.git@a06926d65d0094ac1fe337d23989aef3ad4f7661#egg=CoinboxMod_stock-setup
+-e git+https://github.com/coinbox/coinbox-mod-taxes.git@8201655f0832344929f5e8f99ff662a6f0c8a0aa#egg=CoinboxMod_taxes-setup
+MySQL-python==1.2.4
+PIL==1.1.7
+ProxyTypes==0.9
+PyDispatcher==2.0.3
+PySide==1.2.1
+SQLAlchemy==0.8.4
+args==0.1.0
+clint==0.3.2
+py-bcrypt==0.4
+pytz==2013.8
+wsgiref==0.1.2
