@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
       name="Coinbox-pos",
       version="0.2",
-      packages=find_packages()+['argparse'],
+      packages=find_packages(),
       scripts=['coinbox'],
       
       zip_safe=True,
