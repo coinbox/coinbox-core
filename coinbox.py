@@ -5,6 +5,7 @@ from __future__ import division
 import sys, os, logging
 
 cbpos = None
+retcode = 0
 try:
     import cbpos
     from cbpos.bootstrap import bootstrap
@@ -18,14 +19,18 @@ try:
         data_dir=os.environ.get('COINBOX_DATA_DIR', None),
         locale_dir=os.environ.get('COINBOX_LOCALE_DIR', None)
     )
-    cbpos.run()
+    retcode = cbpos.run()
 except KeyboardInterrupt:
     pass
 except Exception as e:
     logging.error('An error stopped the application')
     logging.exception(e)
+    retcode = 1
 finally:
     logging.info('Exiting...')
-    if cbpos is not None:
-        cbpos.terminate()
-    sys.exit()
+    try:
+        if cbpos is not None:
+            cbpos.terminate(retcode)
+    except:
+        retcode = 1 if retcode == 0 else retcode
+        sys.exit(retcode)
