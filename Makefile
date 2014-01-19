@@ -9,7 +9,7 @@ INSTALL_MODULES = `echo base config installer currency auth customer stock sales
 
 PIP_INSTALL = $(PIP) install
 
-all: develop install-modules
+all: install install-modules
 
 install-requirements:
 		@echo "Installing from requirements file..."
