@@ -24,38 +24,55 @@ Here are the recommended steps you need to take to install Coinbox on your syste
     $ wget https://github.com/coinbox/coinbox-core/archive/master.zip -O install.zip
     $ unzip install.zip
     $ cd coinbox-core-master/
-    $ make install
   
-  * To check that it all went good, first make sure your PC did not blow up after that command. Second, use `pip freeze | less` to check that "Coinbox-pos" is there, along with a couple other dependent packages.
+  * Here, you have the necessary files to install the "core".
+    You can choose what to install exactly, or you can run this which downloads the rest and installs everything:
   
-  * Install the modules:
+    $ make
   
-    $ make install-modules
-    $ # Wait a bit
+  * (You can skip this) Otherwise, you have options to install only the core (and install the modules you want later):
   
-  * Again to check `pip freeze | less` and you shouldn't be smelling burnt silicon.
+    $ make install # This installs the core from the files you have
+    $ make develop-git # This clones the core repository, and installs it in "develop" mode
+    $ make develop # This installs the core from the files you have, but in "develop" mode
+    
+    $ make install-modules # This downloads and installs all the modules from github
+    $ make develop-modules # This clones the repositories for all the modules and installs in "develop" mode
+    $ make develop-modules-zip # This downloads zipballs of the repositories for all the modules and installs in "develop" mode
+    
+    $ # If you want to choose which modules to install/develop, you can use a similar command:
+    $ env INSTALL_MODULES="currency auth" make -e develop-modules
+    $ # Or even with the default install (don't forget the -e though)
+    $ env INSTALL_MODULES="base currency sales" make -e
+    
+    $ # You can also override the GIT_BASE_URL and GIT_BRANCH from which to clone/zipball the repositories (look at the Makefile for more details)
   
-  * Okay so now, we set some environment variables to know where to store everything.
+  * To check that it all went good, first make sure your PC did not blow up after that command.
+    Second, use `pip freeze | less` to check that "Coinbox-pos" is there, along with a couple other dependent packages.
+    And you should also find "Coinbox-mod-XXX" for each module.
   
+  * Okay so now, we should set some environment variables to know where to store everything. (The following commands are just an example)
+  
+    $ cd ..
+    $ # So now we are back to the virtualenv base directory
     $ # Either this:
     $ env COINBOX_LOCALE_DIR=$(pwd) COINBOX_DATA_DIR=$(pwd) COINBOX_CONFIG_DIR=$(pwd) coinbox config
+    $ # Note that you'll have to append the same `env (...)` before every `coinbox (...)` command
     
     
-    $ # Or:
+    $ # Or you can do this once in each session:
     $ export COINBOX_LOCALE_DIR=$(pwd) COINBOX_DATA_DIR=$(pwd) COINBOX_CONFIG_DIR=$(pwd)
     $ env | grep COINBOX
-        COINBOX_LOCALE_DIR=/home/jkik/dev/coinbox
+        COINBOX_LOCALE_DIR=/home/jkik/dev/coinbox # That's my virtualenv base directory
         COINBOX_CONFIG_DIR=/home/jkik/dev/coinbox
         COINBOX_DATA_DIR=/home/jkik/dev/coinbox
     $ coinbox config
+    $ # Note that you'll have to set this every time you want to run coinbox in a session (e.g. when you open a new window in the terminal
+    $ # You could add your export statements to your bash profile for example (using full paths of course) or I'll find a more convenient way to set these
   
-  * You'll probably see "Get me to the wizard." on a blank screen. Just close it, and continue. (it's still work in progress, if you don't see it let me know so I can remove this from this document)
+  * The first time you run coinbox, you _might_ see "Get me to the wizard." and a blank screen. Just close it, and continue. (it's still work in progress, if you don't see it let me know so I can remove this from this document)
   
-  * You might get an import error regarding PIL too, just `pip install PIL`.
-  
-  * And if you want colors in the logs: `pip install clint`.
-  
-  * Oh and there's an issue with `argparse` not having the latest version in Python 2.7, so we ship the latest with us. It *might* not get detected, in that case you'd have to replace it by yourself manually; sorry, I'll see if I can do something about it. Maybe try `make develop` instead of `make install` above in a new virtualenv, or try installing `easy_install --zip-ok argparse`, hopefully there'll be the latest version.
+  * And if you want colors in the logs: `pip install clint`. (and set "app > log_use_colors" to true in `coinbox raw-config`).
   
   * Now configuration:
   
@@ -71,9 +88,7 @@ Here are the recommended steps you need to take to install Coinbox on your syste
   
   * And run!
   
-    $ coinbox
-  
-  * If you get something like "too few arguments", it's argparse, check in the logs which version and where it's loaded, and make sure it's the one we shipped.
+    $ coinbox run
 
 Okay, that's it.
 
