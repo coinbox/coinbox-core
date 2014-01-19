@@ -14,15 +14,19 @@ cbpos.config.set_default('app', 'first_run', True)
 cbpos.config.set_default('app', 'ui_module', 'base')
 
 def parse_args():
-    # TODO: Careful!! We are using another version of argparse that does not ship with Python2.7
-    # (I think it does with Python3.1) So there is a file called argparse.py
-    # You will not be able to run the app without it.
-    logger.debug('Parsing arguments. argparse is version %s', argparse.__version__)
-    logger.debug('Loaded from %s', argparse.__file__)
-    
     cbpos.parser = argparse.ArgumentParser(description=cbpos.description)
     
     cbpos.subparsers = cbpos.parser.add_subparsers(dest='subparser_name')
+    
+    # This subparser does nothing, and just continues running Coinbox as if nothing was passed
+    compat = cbpos.subparsers.add_parser('run', description="Run Coinbox")
+    
+    # Add the dummy 'run' subparser if none is given
+    # TODO: That's a workaround because the version of argparse that ships with Python 2.7
+    #       makes the subparser a required argument
+    if len(sys.argv) == 1:
+        logger.warn("We are appending the run subparser to the arguments...")
+        sys.argv.append('run')
     
     # Load module-specific command-line arguments
     cbpos.modules.load_argparsers()
