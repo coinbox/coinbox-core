@@ -6,8 +6,18 @@ Here are the recommended steps you need to take to install Coinbox on your syste
     $ cd coinbox/
     $ source bin/activate
   
-  * Build PySide, because PIP will (most likely) fail while installing it. If you want to use systen site-packages then you don't need this, you can use your favorite package manager, as long as pip knows about this.
-  
+  * First of all, you most probably need to install PySide before continuing, because it will fail when installing automatically.
+    If you check the docs, there'll be the exact directives. Here are two ways to do that on Linux: (it takes time)
+    
+    $ # AFAIK, you cannot use the distro's package manager because it will not be detected by pip.
+    $ # Use `pip freeze | grep -i pyside` to check if it shows up, if it does then great.
+    
+    $ # Otherwise:
+    
+    $ pip install PySide
+    
+    $ # Or (if you want to make an egg and install many times)
+    
     $ wget https://pypi.python.org/packages/source/P/PySide/PySide-1.2.1.tar.gz
     $ tar -xvzf PySide-1.2.1.tar.gz
     $ cd PySide-1.2.1
@@ -19,7 +29,7 @@ Here are the recommended steps you need to take to install Coinbox on your syste
   
   * Just to check where we're at, you can run `pip freeze | less` and check that PySide is installed.
   
-  * Let the fun begin:
+  * First, we download the setup script from github (this is equivalent to pressing the download button and unzipping):
   
     $ wget https://github.com/coinbox/coinbox-core/archive/master.zip -O install.zip
     $ unzip install.zip
@@ -56,12 +66,12 @@ Here are the recommended steps you need to take to install Coinbox on your syste
     $ cd ..
     $ # So now we are back to the virtualenv base directory
     $ # Either this:
-    $ env COINBOX_LOCALE_DIR=$(pwd) COINBOX_DATA_DIR=$(pwd) COINBOX_CONFIG_DIR=$(pwd) coinbox config
+    $ env COINBOX_LOCALE_DIR=$VIRTUAL_ENV COINBOX_DATA_DIR=$VIRTUAL_ENV COINBOX_CONFIG_DIR=$VIRTUAL_ENV coinbox config
     $ # Note that you'll have to append the same `env (...)` before every `coinbox (...)` command
     
     
     $ # Or you can do this once in each session:
-    $ export COINBOX_LOCALE_DIR=$(pwd) COINBOX_DATA_DIR=$(pwd) COINBOX_CONFIG_DIR=$(pwd)
+    $ export COINBOX_LOCALE_DIR=$VIRTUAL_ENV COINBOX_DATA_DIR=$VIRTUAL_ENV COINBOX_CONFIG_DIR=$VIRTUAL_ENV
     $ env | grep COINBOX
         COINBOX_LOCALE_DIR=/home/jkik/dev/coinbox # That's my virtualenv base directory
         COINBOX_CONFIG_DIR=/home/jkik/dev/coinbox
