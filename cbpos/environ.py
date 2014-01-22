@@ -17,9 +17,13 @@ class Environ(object):
         pass
     
     def init(self):
-        os.makedirs(self.config_dir)
-        os.makedirs(self.data_dir)
-        os.makedirs(self.locale_dir)
+        self.__make_dirs(self.config_dir)
+        self.__make_dirs(self.data_dir)
+        self.__make_dirs(self.locale_dir)
+
+    def __make_dirs(self, d):
+        if not os.path.exists(d):
+            os.makedirs(d)
 
 class FallbackEnviron(Environ):
     def __init__(self):
