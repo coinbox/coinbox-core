@@ -9,16 +9,7 @@ retcode = 0
 try:
     import cbpos
     from cbpos.bootstrap import bootstrap
-    # Read the directories from os.environ or None, which uses defaults
-    # Could also read from a .ini file for the sake of simplicity
-    # For example
-    #        C:\Program Files\Coinbox\directories.ini    (depending on sys.executable if frozen)
-    #    or  /etc/coinbox/directories.ini    (it would be easily packageable and root owned; and we could expanduser too from there)
-    bootstrap(
-        config_dir=os.environ.get('COINBOX_CONFIG_DIR', None),
-        data_dir=os.environ.get('COINBOX_DATA_DIR', None),
-        locale_dir=os.environ.get('COINBOX_LOCALE_DIR', None)
-    )
+    bootstrap()
     retcode = cbpos.run()
 except KeyboardInterrupt:
     pass

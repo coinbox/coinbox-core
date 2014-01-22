@@ -1,21 +1,14 @@
-def bootstrap(config_dir=None, data_dir=None, locale_dir=None):
+def bootstrap():
     # Determine environment and act accordingly
     import cbpos.environ
     env = cbpos.environ.guess_environ()
-    if env is None:
-        warnings.warn('We could not guess what environment Coinbox is in! '
-                      'It would be better if config_dir,data_dir,locale_dir '
-                      'were explicitly specified'
-                      )
-        env = cbpos.environ.get_fallback()
+    
+    # Make sure everything in the environment is OK.
+    env.init()
     
     # Configuration access
     import cbpos.configuration
-    cbpos.config = cbpos.configuration.load(
-        config_dir=config_dir or env.default_config_dir,
-        data_dir=data_dir or env.default_data_dir,
-        locale_dir=locale_dir or env.default_locale_dir
-    )
+    cbpos.config = cbpos.configuration.Config(env)
     
     # Logging as specified in the configuration
     import cbpos.logger
