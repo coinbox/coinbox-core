@@ -232,8 +232,9 @@ class ModuleInitializer(object):
             logger.debug('Loading module {}...'.format(wrap.base_name))
             try:
                 wrap.load()
-            except ImportError:
+            except ImportError as e:
                 logger.warn('Invalid module {}.'.format(wrap.base_name))
+                logger.exception(e)
                 wrap.disable()
                 continue
             except:
@@ -368,22 +369,21 @@ class ModuleInitializer(object):
         
         return True
     
-    def update_path(self, values):
+    def update_path(self, config_path=None):
         """
-        Insert the module paths from config by making sure:
-         - there are no duplicates (set)
-         - the custom paths exist
-         - case-insensitive paths are taken into account
+        Insert the module paths from config.
+        The paths do not have to be directories or files,
+        since a path could point to a "subdirectory" of a
+        zipped egg (in which case we cannot check if it exists
+        or not).
+        The validity of the values is left to Python importers
+        and the user.
         """
-        values = [] if values is None else values
+        if config_path is not None:
+            # Ignore empty values and duplicates
+            unique_paths = set(cbmod.__path__ + [v for v in config_path if v])
+            cbmod.__path__ = list(unique_paths)
         
-        modules_path = set([os.path.normcase(os.path.realpath(p)) \
-                            for p in values if p and os.path.exists(p)] + \
-                           
-                           [os.path.normcase(os.path.realpath(p)) \
-                            for p in cbmod.__path__])
-        
-        cbmod.__path__ = list(modules_path)
         self.path = cbmod.__path__
         return self.path
 
