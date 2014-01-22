@@ -197,11 +197,11 @@ class Win32Environ(Environ):
         self.__firstmatch = None
         
         for scope in (Win32Environ.ROAMING, Win32Environ.COMMON, Win32Environ.LOCAL):
-            if self.__try_path(self.__app_data_path_environ(scope)):
+            if self.__try_app_data_path(self.__app_data_path_environ(scope)):
                 break
-            if self.__try_path(self.__app_data_path_win32com(scope)):
+            if self.__try_app_data_path(self.__app_data_path_win32com(scope)):
                 break
-            if self.__try_path(self.__app_data_path_winreg(scope), sub):
+            if self.__try_app_data_path(self.__app_data_path_winreg(scope)):
                 break
         else:
             # Didn't break -> Did not find existing -> Pick first one and create later
@@ -209,24 +209,24 @@ class Win32Environ(Environ):
             return False
         # Broke out and we did find one which exists
         return True
-    
-    def __try_app_data_path(p):
-            """
-            Checks if Coinbox has a directory at path `p`
-            """
-            basepath = os.path.join(p, 'Coinbox')
-            
-            # Only save the first match if the path `p` is a valid directory
-            if self.__firstmatch is None and os.path.isdir(p):
-                self.__firstmatch = basepath
-            
-            # If it exists, we found it; else we didn't
-            if os.path.isdir(basepath):
-                self.__basepath = basepath
-                return True
-            else:
-                return False
-    
+
+    def __try_app_data_path(self, p):
+        """
+        Checks if Coinbox has a directory at path `p`
+        """
+        basepath = os.path.join(p, 'Coinbox')
+        
+        # Only save the first match if the path `p` is a valid directory
+        if self.__firstmatch is None and os.path.isdir(p):
+            self.__firstmatch = basepath
+
+        # If it exists, we found it; else we didn't
+        if os.path.isdir(basepath):
+            self.__basepath = basepath
+            return True
+        else:
+            return False
+
     def __get_path(self, sub):
         """
         Return either the appropriate NSIS path or Windows standard path.
