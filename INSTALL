@@ -1,4 +1,7 @@
-Here are the recommended steps you need to take to install Coinbox on your system:
+Instructions to install Coinbox:
+================================
+
+# Linux systems
 
   * Create the `virtualenv`:
 
@@ -61,7 +64,10 @@ Here are the recommended steps you need to take to install Coinbox on your syste
     Second, use `pip freeze | less` to check that "Coinbox-pos" is there, along with a couple other dependent packages.
     And you should also find "Coinbox-mod-XXX" for each module.
   
-  * Okay so now, we should set some environment variables to know where to store everything. (The following commands are just an example)
+  * Okay so now, we should set some environment variables to know where to store everything.
+     (The following commands are just an example)
+     (You can skip this step, and if you do, the config files will be in $HOME/config)
+     (Also, if you `pip install pyxdg`, these files will be in the standard paths of your system)
   
     $ cd ..
     $ # So now we are back to the virtualenv base directory
@@ -102,17 +108,127 @@ Here are the recommended steps you need to take to install Coinbox on your syste
 
 Okay, that's it.
 
-I didn't mention the things you'll have to have installed to build everything.
-I'll have to use a fresh default install for that, without the dev tools installed.
+There are prerequisites to these steps though, especially to build PySide.
 
-But basically:
+For example, on a fresh Fedora 20 KDE system:
 
-  * build-essentials
-  * python-dev (or python-devel)
-  * mysql-dev (or mysql-devel) if you install MySQL-python
-  * (same for postgres)
-  * for pyside, check online. Their docs say for Ubuntu (use equivalent for Fedora and co., and once it fails google the error and it *should* be obvious or `yum provides xxxx.so.1` can help): `$ sudo apt-get install build-essential git cmake libqt4-dev libphonon-dev python2.7-dev libxml2-dev libxslt1-dev qtmobility-dev`
-  * something I might have forgotten
+  * Installation prerequisites:
+    * yum install python-virtualenv wget
+  
+  * PySide prerequisites:
+    * yum install make cmake gcc gcc-c++ qt-devel phonon-devel python-devel libxml2-devel libxslt-devel qtwebkit-devel
+  
+  * MySQL/MariaDB prerequisites:
+    * yum install mariadb-devel
+    * pip install MySQL-python # (in the virtualenv)
 
-Oh and for Windows, just use the installer, because otherwise it would be a pain in the ass.
-I'll build an installer soon :)
+  * PostgreSQL prerequisites:
+    * yum install postgresql postgresql-devel
+    * yum install postgresql-server postgresql-contrib # (optional)
+    * pip install psycopg2 # (in the virtualenv)
+
+For Debian/Ubuntu, most probably:
+
+  * apt-get install python-virtualenv wget
+  * apt-get install build-essential git cmake libqt4-dev libphonon-dev python2.7-dev libxml2-dev libxslt1-dev qtmobility-dev # for PySide (check their website)
+  * apt-get install mysql-dev # (if you install MySQL-python)
+  * apt-get install postgresql postgresql-client # (if you install psycopg2)
+
+# Windows
+
+The easiest way to install Coinbox is through the installer (which you
+can find either on the website or on the Google Group or somewhere).
+
+If you want to build the installer yourself, you'll have to set up your
+own development environment and build from there.
+
+  * Install virtualenv and a git shell
+  * Create a virtualenv:
+  
+    virtualenv coinsetup
+    cd coinsetup/
+    source Scripts/activate
+    
+  * Install PySide, you can use easy_install for that:
+  
+    easy_install ../PySide-1.2.1-py2.7-win-amd64.egg
+    pyside_postinstall.py -install
+
+  * Install core and modules (from git):
+  
+    pip install -e git+https://github.com/coinbox/coinbox-core.git#egg=Coinbox-pos
+    
+    pip install -e git+https://github.com/coinbox/coinbox-mod-base.git#egg=Coinbox-mod-base
+    pip install -e git+https://github.com/coinbox/coinbox-mod-auth.git#egg=Coinbox-mod-auth
+    pip install -e git+https://github.com/coinbox/coinbox-mod-config.git#egg=Coinbox-mod-config
+    pip install -e git+https://github.com/coinbox/coinbox-mod-installer.git#egg=Coinbox-mod-installer
+    pip install -e git+https://github.com/coinbox/coinbox-mod-currency.git#egg=Coinbox-mod-currency
+    pip install -e git+https://github.com/coinbox/coinbox-mod-customer.git#egg=Coinbox-mod-customer
+    pip install -e git+https://github.com/coinbox/coinbox-mod-stock.git#egg=Coinbox-mod-stock
+    pip install -e git+https://github.com/coinbox/coinbox-mod-sales.git#egg=Coinbox-mod-sales
+    pip install -e git+https://github.com/coinbox/coinbox-mod-taxes.git#egg=Coinbox-mod-taxes
+    
+  * Run Coinbox (the data/config/locale directories will be in APPDATA or similar standard Windows path by default)
+  
+    coinbox raw-config # Add a language (e.g. en_US) to locale > languages (it is crashing now without that, so just in case
+    coinbox config # Set up the database
+
+  * Install PyInstaller to build the exe and dlls before we bundle it:
+  
+    easy_install http://link.to/pywin32-installer.exe # Find that somewhere on the internet (sourceforge or something)
+    pip install PyInstaller
+
+  * Now, there are some issues with PyInstaller which I noticed when using it. So by the time they're fixed, here's the workaround:
+  
+    * Modify Lib/site-packages/PyInstaller/imptracker.py; find "FIXME"; comment "setattr(parent, nm, mod)" and replace with "pass"
+    
+    * Modify Lib/site-packages/PyInstaller/modules.py; add after line 121:
+
+    from pkgutil import extend_path
+    self.__path__ = extend_path(self.__path__, nm)
+    
+    # (See: https://github.com/pyinstaller/pyinstaller/pull/28)
+    
+    * And an issue with ProxyTypes and/or PyInstaller: Add empty __init__.py file in Lib/site-packages/peak and Lib/site-packages/peak/util
+    
+    * And an issue with PyInstaller and Babel:
+    
+      * In PyInstaller/hooks/hook-babel.py
+        * Add new hidden imports
+            # ...
+            hiddenimports = ["babel.dates", "babel.plural", "babel.support"]
+
+        * Add the global.data file to the babel/ directory
+            # ...
+            babel_globaldat = os.path.realpath(os.path.join(babel_localedata_dir, '..', 'global.dat'))
+            # ...
+            (babel_globaldat, "babel"),
+            # ...
+
+  * Ok, now we can build with PyInstaller:
+  
+    # This will output in the $(current directory)/dist/
+    # Use it if you want to output to a custom directory
+    pyinstaller /full/path/to/.../tools/coinbox.spec
+    
+    # Or you cd to src/coinbox-pos and ...
+    # The standard future-proof way (using a custom command to setup.py)
+    python setup.py bdist_pyi
+
+  * Install NSIS from their website
+  
+  * Use either of these command to build the installer:
+  
+    # Same as before (custom directory etc.)
+    /full/path/to/makensis.exe -NOCD -- /full/path/to/tools/installer.nsi
+    
+    # Or using the custom setup.py command (recommended)
+    # After cd'ing to src/coinbox-pos
+    python setup.py bdist_nsis
+    
+  * Using the NSIS installer will save the config/data/locale directories in the registry,
+    and any instance of Coinbox on that machine will use those. If you delete them, it'll fall
+    back to AppData/Roaming or /ProgramData or AppData/Local depending on which one exists.
+    (that is the default behavior if no registry keys are present)
+
+That was long!
