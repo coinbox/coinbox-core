@@ -2,27 +2,27 @@
 
 import glob, os
 
-cwd = os.getcwd()
+cwd = os.path.realpath(os.path.join(SPECPATH, '..')) #os.getcwd()
 
-a = Analysis(['coinbox.py'],
-             pathex=[cwd],
-             hiddenimports=['cbpos'],
-             hookspath=[os.path.join('tools', 'hooks')])
+import cbmod
 
-import cbpos
+a = Analysis([os.path.join(cwd, 'coinbox.py')],
+             hookspath=[os.path.join(cwd, 'tools', 'hooks')]
+             )
 
-for mp in set(os.path.normcase(os.path.realpath(p)) for p in cbpos.mod.__path__):
+for mp in set(os.path.normcase(os.path.realpath(p)) for p in cbmod.__path__):
     p = len(mp)
     for res in glob.glob(os.path.join(mp, '*', 'res')):
         for root, dirnames, filenames in os.walk(res):
             relroot = root[p:].strip(os.path.sep)
             for f in filenames:
-                a.datas.append((os.path.join('cbpos', 'mod', relroot, f),
+                a.datas.append((os.path.join('cbmod', relroot, f),
                                 os.path.join(root, f),
                                 'DATA'))
 
-a.datas.append(('coinbox.ico', os.path.join(cwd, 'coinbox.ico'), 'DATA'))
-a.datas.append(('COPYING', os.path.join(cwd, 'COPYING'), 'DATA'))
+# Used for the NSIS installer
+a.datas.append(('coinbox.ico', os.path.join(cwd, 'coinbox.ico'), 'DATA')) # NSIS will need a full path to a .ico file
+a.datas.append(('LICENSE', os.path.join(cwd, 'LICENSE'), 'DATA'))
 a.datas.append(('README', os.path.join(cwd, 'README'), 'DATA'))
 
 pyz = PYZ(a.pure)
@@ -30,11 +30,12 @@ pyz = PYZ(a.pure)
 exe = EXE(pyz,
           a.scripts,
           exclude_binaries=1,
-          name=os.path.join('build', 'pyi.win32', 'coinbox', 'coinbox.exe'),
-          debug=True,
+          name='coinbox.exe',
+          debug=False,
           strip=None,
           upx=True,
-          console=True )
+          console=True,
+          icon=os.path.join(cwd, 'coinbox.ico'))
 
 coll = COLLECT(exe,
                a.binaries,
@@ -42,4 +43,4 @@ coll = COLLECT(exe,
                a.datas,
                strip=None,
                upx=True,
-               name=os.path.join('dist', 'coinbox'))
+               name=os.path.join(cwd, 'dist', 'coinbox'))

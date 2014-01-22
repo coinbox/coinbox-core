@@ -211,7 +211,7 @@ class ModuleInitializer(object):
                 for name in importer.toc:
                     p = name.split('.')
                     if len(p) == 2 and p[0] == 'cbmod': # Only match the pattern `cbmod.[modname]`
-                        self.packages.append((importer, p[2], True)) # The first and 3rd arguments are ignored
+                        self.packages.append((importer, p[1], True)) # The first and 3rd arguments are ignored
         
         # Package with names starting with '_' are ignored
         self.packages += [p for p in pkgutil.walk_packages(self.path) \
