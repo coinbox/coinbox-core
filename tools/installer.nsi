@@ -28,7 +28,7 @@
 
     ;Name and file
     Name "Coinbox"
-    OutFile "coinbox-install.exe"
+    OutFile "dist/coinbox-install.exe"
 
     ;Default installation folder
     InstallDir "$PROGRAMFILES\Coinbox"
@@ -52,11 +52,11 @@
 ;Pages
 
     !insertmacro MULTIUSER_PAGE_INSTALLMODE
-    !insertmacro MUI_PAGE_LICENSE "dist\coinbox\COPYING"
+    !insertmacro MUI_PAGE_LICENSE "dist\coinbox\LICENSE"
     !insertmacro MUI_PAGE_DIRECTORY
 
     ;Start Menu Folder Page Configuration
-    !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
+    !define MUI_STARTMENUPAGE_REGISTRY_ROOT SHCTX 
     !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\Coinbox" 
     !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "StartMenuFolder"
 
@@ -81,6 +81,11 @@ Section "-Coinbox" SecCoinbox
 
     File /r "dist\coinbox\*.*" 
 
+    ;Store paths to COINBOX_CONFIG_DIR, COINBOX_DATA_DIR, COINBOX_LOCALE_DIR
+    WriteRegStr SHCTX "${INSTDIR_KEY}" "ConfigDir" "$APPDATA\Coinbox\config"
+    WriteRegStr SHCTX "${INSTDIR_KEY}" "DataDir" "$APPDATA\Coinbox\data"
+    WriteRegStr SHCTX "${INSTDIR_KEY}" "LocaleDir" "$APPDATA\Coinbox\locale"
+
     ;Store installation folder
     WriteRegStr SHCTX "${INSTDIR_KEY}" "${INSTDIR_SUBKEY}" $INSTDIR
 
@@ -100,9 +105,18 @@ Section "-Coinbox" SecCoinbox
 
     ;Create shortcuts
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Coinbox.lnk" "$INSTDIR\coinbox.exe" "" "$INSTDIR\coinbox.ico"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Coinbox.lnk" "$INSTDIR\coinbox.exe" "run" "$INSTDIR\coinbox.exe"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Coinbox Config Editor.lnk" "$INSTDIR\coinbox.exe" "config" "$INSTDIR\coinbox.exe"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Coinbox Raw Config Editor.lnk" "$INSTDIR\coinbox.exe" "raw-config" "$INSTDIR\coinbox.exe"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall Coinbox.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe"
 
     !insertmacro MUI_STARTMENU_WRITE_END
+
+    ;Create Config/Data/Locale folders in (Roaming) $APPDATA
+    CreateDirectory "$APPDATA\Coinbox"
+    CreateDirectory "$APPDATA\Coinbox\config"
+    CreateDirectory "$APPDATA\Coinbox\data"
+    CreateDirectory "$APPDATA\Coinbox\locale"
 
 SectionEnd
 
@@ -132,6 +146,10 @@ Section "Uninstall"
     !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
     Delete "$SMPROGRAMS\$StartMenuFolder\Coinbox.lnk"
+    Delete "$SMPROGRAMS\$StartMenuFolder\Coinbox.lnk"
+    Delete "$SMPROGRAMS\$StartMenuFolder\Coinbox Config Editor.lnk"
+    Delete "$SMPROGRAMS\$StartMenuFolder\Coinbox Raw Config Editor.lnk"
+    Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall Coinbox.lnk"
     RMDir "$SMPROGRAMS\$StartMenuFolder"
 
     DeleteRegKey SHCTX "${UNINST_KEY}"
