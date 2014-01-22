@@ -7,11 +7,9 @@ class Profile(object):
                  query=None, drivername=None):
         self.name = self._name = name
         
+        # Could be different than driver.name, e.g. "mysql" or "mysql+pymysql"
+        self.drivername = drivername
         self.driver = driver
-        self.drivername = drivername # Could be different than driver.name, e.g. "mysql" or "mysql+pymysql"
-        
-        if not self.drivername:
-            self.drivername = self.driver.name
         
         self.host = host
         self.port = port
@@ -25,6 +23,21 @@ class Profile(object):
         self.editable = True
         
         _profiles[name] = self
+    
+    @property
+    def driver(self):
+        return self.__driver
+    
+    @driver.setter
+    def driver(self, d):
+        self.__driver = d
+        if d is not None and \
+                (not self.drivername or \
+                 self.drivername.split('+', 1)[0] != d.name):
+            # No specific drivername is requested
+            # Or the selected drivername does not match the driver
+            # Then update the driver name to the default of the selected driver
+            self.drivername = d.name
     
     def save(self):
         if not self.editable:
@@ -59,7 +72,7 @@ class Profile(object):
     def __iter__(self):
         for s in self._options:
             v = getattr(self, s)
-            if v is not None:
+            if v is not None and s not in self.driver.empty_fields:
                 yield (s, v)
     
     def __repr__(self):

@@ -8,6 +8,7 @@ class Driver(object):
             "database": {"label": "Database", "required": False, "default": None},
             "query": {"label": "Query", "required": False, "default": None}
             }
+    empty_fields = frozenset()
     
     def __repr__(self):
         return '<Driver %s>' % (self.name,)
@@ -16,6 +17,7 @@ class SQLiteDriver(Driver):
     name = 'sqlite'
     display = 'SQLite'
     form = {"database": {"label": "Filename", "required": False, "default": None}}
+    empty_fields = frozenset(("host", "port", "username", "password"))
 
 class MySQLDriver(Driver):
     name = 'mysql'
