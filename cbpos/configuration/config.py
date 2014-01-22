@@ -1,13 +1,26 @@
 import json
+import os
 
-class Config:
+class Config(object):
     """
     Main configuration class, a wrapper around the a json parser. 
     """
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self, env):
+        
+        # Environment information
+        self.env = env
+        self.config_dir = self.env.config_dir
+        self.data_dir = self.env.data_dir
+        self.locale_dir = self.env.locale_dir
+        
+        # Determine the full path to the config file
+        self.filename = os.path.join(self.config_dir, 'coinbox.json')
+        
+        # Initialize config storage
         self.__config = None
         self.defaults = {}
+        
+        # Use pretty printing for JSON config files
         self.pretty = True
         
         self.read()
@@ -19,9 +32,15 @@ class Config:
         try:
             with open(self.filename, 'r') as f:
                 self.__config = json.load(f)
-        except:
-            # Maybe the file does not exist
-            self.__config = {}
+        except (IOError, OSError) as e:
+            # File reading error
+            if not os.path.exists(self.filename):
+                self.__config = {}
+            else:
+                raise
+        except ValueError:
+            # JSON decoding error
+            raise
     
     def save(self):
         """
@@ -29,7 +48,7 @@ class Config:
         """
         with open(self.filename, 'w') as f:
             if self.pretty:
-                json.dump(self.__config, f, sort_keys=True,
+                json.dump(self.__config, f, sort_keys=False,
                             indent=4, separators=(',', ': '))
             else:
                 json.dump(self.__config, f)
@@ -54,7 +73,7 @@ class Config:
         Clears the configuration and saves to a file.
         This will reset the application to a "first run" configuration.
         """
-        del self._config
+        del self.__config
         self.__config = {}
         self.save()
     

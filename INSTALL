@@ -1,0 +1,118 @@
+Here are the recommended steps you need to take to install Coinbox on your system:
+
+  * Create the `virtualenv`:
+
+    $ virtualenv coinbox
+    $ cd coinbox/
+    $ source bin/activate
+  
+  * First of all, you most probably need to install PySide before continuing, because it will fail when installing automatically.
+    If you check the docs, there'll be the exact directives. Here are two ways to do that on Linux: (it takes time)
+    
+    $ # AFAIK, you cannot use the distro's package manager because it will not be detected by pip.
+    $ # Use `pip freeze | grep -i pyside` to check if it shows up, if it does then great.
+    
+    $ # Otherwise:
+    
+    $ pip install PySide
+    
+    $ # Or (if you want to make an egg and install many times)
+    
+    $ wget https://pypi.python.org/packages/source/P/PySide/PySide-1.2.1.tar.gz
+    $ tar -xvzf PySide-1.2.1.tar.gz
+    $ cd PySide-1.2.1
+    $ python2.7 setup.py bdist_egg --qmake=/usr/bin/qmake-qt4
+    $ # Wait... Get something to drink... Wait some more...
+    $ easy_install dist/PySide-1.2.1-py2.7.egg
+    $ pyside_postinstall.py -install
+    $ cd ..
+  
+  * Just to check where we're at, you can run `pip freeze | less` and check that PySide is installed.
+  
+  * First, we download the setup script from github (this is equivalent to pressing the download button and unzipping):
+  
+    $ wget https://github.com/coinbox/coinbox-core/archive/master.zip -O install.zip
+    $ unzip install.zip
+    $ cd coinbox-core-master/
+  
+  * Here, you have the necessary files to install the "core".
+    You can choose what to install exactly, or you can run this which downloads the rest and installs everything:
+  
+    $ make
+  
+  * (You can skip this) Otherwise, you have options to install only the core (and install the modules you want later):
+  
+    $ make install # This installs the core from the files you have
+    $ make develop-git # This clones the core repository, and installs it in "develop" mode
+    $ make develop # This installs the core from the files you have, but in "develop" mode
+    
+    $ make install-modules # This downloads and installs all the modules from github
+    $ make develop-modules # This clones the repositories for all the modules and installs in "develop" mode
+    $ make develop-modules-zip # This downloads zipballs of the repositories for all the modules and installs in "develop" mode
+    
+    $ # If you want to choose which modules to install/develop, you can use a similar command:
+    $ env INSTALL_MODULES="currency auth" make -e develop-modules
+    $ # Or even with the default install (don't forget the -e though)
+    $ env INSTALL_MODULES="base currency sales" make -e
+    
+    $ # You can also override the GIT_BASE_URL and GIT_BRANCH from which to clone/zipball the repositories (look at the Makefile for more details)
+  
+  * To check that it all went good, first make sure your PC did not blow up after that command.
+    Second, use `pip freeze | less` to check that "Coinbox-pos" is there, along with a couple other dependent packages.
+    And you should also find "Coinbox-mod-XXX" for each module.
+  
+  * Okay so now, we should set some environment variables to know where to store everything. (The following commands are just an example)
+  
+    $ cd ..
+    $ # So now we are back to the virtualenv base directory
+    $ # Either this:
+    $ env COINBOX_LOCALE_DIR=$VIRTUAL_ENV COINBOX_DATA_DIR=$VIRTUAL_ENV COINBOX_CONFIG_DIR=$VIRTUAL_ENV coinbox config
+    $ # Note that you'll have to append the same `env (...)` before every `coinbox (...)` command
+    
+    
+    $ # Or you can do this once in each session:
+    $ export COINBOX_LOCALE_DIR=$VIRTUAL_ENV COINBOX_DATA_DIR=$VIRTUAL_ENV COINBOX_CONFIG_DIR=$VIRTUAL_ENV
+    $ env | grep COINBOX
+        COINBOX_LOCALE_DIR=/home/jkik/dev/coinbox # That's my virtualenv base directory
+        COINBOX_CONFIG_DIR=/home/jkik/dev/coinbox
+        COINBOX_DATA_DIR=/home/jkik/dev/coinbox
+    $ coinbox config
+    $ # Note that you'll have to set this every time you want to run coinbox in a session (e.g. when you open a new window in the terminal
+    $ # You could add your export statements to your bash profile for example (using full paths of course) or I'll find a more convenient way to set these
+  
+  * The first time you run coinbox, you _might_ see "Get me to the wizard." and a blank screen. Just close it, and continue. (it's still work in progress, if you don't see it let me know so I can remove this from this document)
+  
+  * And if you want colors in the logs: `pip install clint`. (and set "app > log_use_colors" to true in `coinbox raw-config`).
+  
+  * Now configuration:
+  
+    $ coinbox config
+    $ # Configure the database. You can just press OK for now. And say yes to everything
+  
+  * In case you want to use MySQL: `pip install MySQL-python` and for PostgreSQL: `pip install psycopg2`, etc.
+  
+  * And in case you want to help us or report a bug (which also helps us):
+  
+    $ coinbox raw-config
+    $ # From there in the "app" tab, you can set logging level to DEBUG and direct the log to a file (easy to attach) and even give it colors (not in the file, and install clint, and on linux/mac/cygwin not windows's cmd)
+  
+  * And run!
+  
+    $ coinbox run
+
+Okay, that's it.
+
+I didn't mention the things you'll have to have installed to build everything.
+I'll have to use a fresh default install for that, without the dev tools installed.
+
+But basically:
+
+  * build-essentials
+  * python-dev (or python-devel)
+  * mysql-dev (or mysql-devel) if you install MySQL-python
+  * (same for postgres)
+  * for pyside, check online. Their docs say for Ubuntu (use equivalent for Fedora and co., and once it fails google the error and it *should* be obvious or `yum provides xxxx.so.1` can help): `$ sudo apt-get install build-essential git cmake libqt4-dev libphonon-dev python2.7-dev libxml2-dev libxslt1-dev qtmobility-dev`
+  * something I might have forgotten
+
+Oh and for Windows, just use the installer, because otherwise it would be a pain in the ass.
+I'll build an installer soon :)
