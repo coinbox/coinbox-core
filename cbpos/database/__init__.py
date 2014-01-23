@@ -6,7 +6,8 @@ from sqlalchemy.engine.url import URL
 import cbpos
 logger = cbpos.get_logger(__name__)
 
-from .profile import get_used_profile
+from .profile import Profile, ProfileNotFoundError
+from .driver import Driver, DriverNotFoundError
 
 # Define default database configuration for different RDBMS's
 cbpos.config.set_default('db', 'used', 'default')
@@ -27,7 +28,8 @@ def get_url():
     """
     Return the URL to be used with engine creation based on configuration
     """
-    return URL(**dict(get_used_profile()))
+    used = Profile.get_used()
+    return URL(**dict(used))
 
 def clear():
     """
@@ -50,31 +52,22 @@ def init():
     """
     Creates the SQLAlchemy engine, Session class and declarative base using the user's configuration.
     """
-    global engine
+    global engine, Base, Session, _session
 
     if engine is not None:
-        logger.warn('Engine is not None')
-        return
+        logger.warn('Engine is not None. Deleting and recreating one')
+        del engine
+        engine = None
     
     logger.debug('Starting database...')
-    url = get_url()
-    try:
-        start(url)
-    except Exception as e:
-        logger.exception(e)
-        logger.error('Could not connect to database: %s' % (url,))
-        return False
-    else:
-        return True
-
-def start(url):
-    global engine, Base, Session
     
     echo = bool(cbpos.config['db', 'echo'])
+    url = get_url()
     
     engine = create_engine(url, echo=echo)
     Base = declarative_base(bind=engine)
     Session = sessionmaker(bind=engine)
+    _session = None
 
     # This is called to ensure an error is raised if connection failed
     engine.connect()

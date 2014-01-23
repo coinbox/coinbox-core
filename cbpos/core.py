@@ -5,6 +5,7 @@ import sys, os, argparse
 
 from pydispatch import dispatcher
 from babel import Locale, UnknownLocaleError
+from sqlalchemy import exc
 
 import cbpos
 logger = cbpos.get_logger(__name__)
@@ -155,8 +156,22 @@ def run():
     init_translation(use=(_use_translation and locale_use))
     
     if _load_database:
-        if not cbpos.database.init():
-            return
+        try:
+            cbpos.database.init()
+        except ImportError as e:
+            # Either the required db backend is not installed
+            logger.exception("Database initialization error")
+            logger.fatal("Database connection failed. It seems this database backend is not installed.")
+            return False
+        except exc.SQLAlchemyError as e:
+            # Or there is a database error (connection, etc.)
+            logger.exception("Database initialization error")
+            logger.fatal("Database connection failed. Check the configuration.")
+            return False
+        except Exception as e:
+            # Or an unexpected error
+            logger.exception("Database initialization error")
+            return False
         # Load database objects of every module
         cbpos.modules.load_database()
     else:
@@ -180,8 +195,7 @@ def run():
             try:
                 init = mod.init()
             except Exception as e:
-                logger.fatal('Initializing module %s failed.', mod.base_name)
-                logger.exception(e)
+                logger.exception('Initializing module %s failed.', mod.base_name)
                 return False
             else:
                 if not init:

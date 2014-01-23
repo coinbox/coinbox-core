@@ -1,3 +1,5 @@
+__all__ = ('Driver', 'DriverNotFoundError')
+
 class Driver(object):
     name = None
     display = 'Generic Driver'
@@ -9,15 +11,30 @@ class Driver(object):
             "query": {"label": "Query", "required": False, "default": None}
             }
     empty_fields = frozenset()
+    use_database_as_filename = False
     
     def __repr__(self):
         return '<Driver %s>' % (self.name,)
+    
+    __drivers = {}
+    @classmethod
+    def get(cls, driver_name):
+        return cls.__drivers[driver_name.split("+", 1)[0]]
+    
+    @classmethod
+    def get_all(cls):
+        return cls.__drivers.values()
+    
+    @classmethod
+    def register(cls, driver_cls):
+        cls.__drivers[driver_cls.name] = driver_cls
 
 class SQLiteDriver(Driver):
     name = 'sqlite'
     display = 'SQLite'
     form = {"database": {"label": "Filename", "required": False, "default": None}}
     empty_fields = frozenset(("host", "port", "username", "password"))
+    use_database_as_filename = True
 
 class MySQLDriver(Driver):
     name = 'mysql'
@@ -48,6 +65,7 @@ class FirebirdDriver(Driver):
             "password": {"label": "Password", "required": False, "default": None},
             "database": {"label": "Filename", "required": True, "default": ""}
             }
+    use_database_as_filename = True
 
 class MsSQLDriver(Driver):
     name = 'mssql'
@@ -59,11 +77,11 @@ class MsSQLDriver(Driver):
             "database": {"label": "Database", "required": True, "default": None}
             }
 
-DRIVERS = {'sqlite': SQLiteDriver(), 'mysql': MySQLDriver(), 'postgresql': PostgreSQLDriver(),
-           'firebird': FirebirdDriver(), 'mssql': MsSQLDriver()}
+Driver.register(SQLiteDriver)
+Driver.register(MySQLDriver)
+Driver.register(PostgreSQLDriver)
+Driver.register(FirebirdDriver)
+Driver.register(MsSQLDriver)
 
-def get_driver(driver_name):
-    return DRIVERS[driver_name.split("+", 1)[0]] 
-
-def all_drivers():
-    return DRIVERS.values()
+class DriverNotFoundError(ValueError):
+    pass
