@@ -54,11 +54,14 @@ Instructions to install Coinbox:
     $ make develop-modules-zip # This downloads zipballs of the repositories for all the modules and installs in "develop" mode
     
     $ # If you want to choose which modules to install/develop, you can use a similar command:
-    $ env INSTALL_MODULES="currency auth" make -e develop-modules
+    $ env COINBOX_INSTALL_MODULES="currency auth" make -e develop-modules
     $ # Or even with the default install (don't forget the -e though)
-    $ env INSTALL_MODULES="base currency sales" make -e
+    $ env COINBOX_INSTALL_MODULES="base currency sales" make -e
     
-    $ # You can also override the GIT_BASE_URL and GIT_BRANCH from which to clone/zipball the repositories (look at the Makefile for more details)
+    $ # You can also override the COINBOX_GIT_BASE_URL and COINBOX_GIT_BRANCH from which to clone/zipball the repositories (look at the Makefile for more details)
+    $ # And you can use COINBOX_UPGRADE to force the latest version of everything to be installed
+    $ env COINBOX_UPGRADE=yes COINBOX_INSTALL_MODULES="base currency sales" make -e install-modules-zip
+    $ env COINBOX_UPGRADE=yes make -e install-zip
   
   * To check that it all went good, first make sure your PC did not blow up after that command.
     Second, use `pip freeze | less` to check that "Coinbox-pos" is there, along with a couple other dependent packages.

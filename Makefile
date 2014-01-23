@@ -1,19 +1,29 @@
 PYTHON = `which python2 python | head -n 1`
-PIP = `which pip`
+PIP = pip
+PIP_INSTALL = $(PIP) install
+PIP_DEVELOP = $(PIP_INSTALL) -e
+PIP_REQUIRE = $(PIP_INSTALL) -r
+PIP_UPGRADE_OPTION = --upgrade
 
 COINBOX_TMP = ./coinbox-install
 
-GIT_BASE_URL = https://github.com/coinbox
-GIT_BRANCH = master
-INSTALL_MODULES = `echo base config installer currency auth customer stock sales taxes`
+COINBOX_GIT_BASE_URL = https://github.com/coinbox
+COINBOX_GIT_BRANCH = master
+COINBOX_INSTALL_MODULES = base config installer currency auth customer stock sales taxes
+COINBOX_UPGRADE = 0
 
-PIP_INSTALL = $(PIP) install
+ifneq (${COINBOX_UPGRADE}, 0)
+	PIP_INSTALL += $(PIP_UPGRADE_OPTION)
+	PIP_DEVELOP += $(PIP_UPGRADE_OPTION)
+	# Do not add it to PIP_REQUIRE
+	# PIP_REQUIRE += $(PIP_UPGRADE_OPTION)
+endif
 
 all: install install-modules
 
 install-requirements:
 		@echo "Installing from requirements file..."
-		${PIP_INSTALL} -r ./requirements.txt
+		${PIP_REQUIRE} ./requirements.txt
 
 install:
 		@echo "Installing Coinbox-pos only..."
@@ -21,51 +31,51 @@ install:
 
 install-git:
 		@echo "Installing Coinbox-pos only using git (in develop mode)..."
-		${PIP_INSTALL} git+${GIT_BASE_URL}/coinbox-core@${GIT_BRANCH}#egg=Coinbox-pos
+		${PIP_INSTALL} git+${COINBOX_GIT_BASE_URL}/coinbox-core@${COINBOX_GIT_BRANCH}#egg=Coinbox-pos
 
 develop:
 		@echo "Installing Coinbox-pos only (in develop mode)..."
-		${PIP_INSTALL} -e .
+		${PIP_DEVELOP} .
 
 develop-git:
 		@echo "Installing Coinbox-pos only using git (in develop mode)..."
-		${PIP_INSTALL} -e git+${GIT_BASE_URL}/coinbox-core@${GIT_BRANCH}#egg=Coinbox-pos
+		${PIP_DEVELOP} git+${COINBOX_GIT_BASE_URL}/coinbox-core@${COINBOX_GIT_BRANCH}#egg=Coinbox-pos
 
 install-modules: install-modules-zip
 
 install-modules-zip:
 		@echo "Installing selected Coinbox-mod-* using zip..."
-		@echo ${INSTALL_MODULES}
+		@echo ${COINBOX_INSTALL_MODULES}
 		mkdir -p ${COINBOX_TMP}
-		for mod in ${INSTALL_MODULES}; do \
-			wget -O ${COINBOX_TMP}/$${mod}.zip ${GIT_BASE_URL}/coinbox-mod-$${mod}/archive/${GIT_BRANCH}.zip ; \
+		for mod in ${COINBOX_INSTALL_MODULES}; do \
+			wget -O ${COINBOX_TMP}/$${mod}.zip ${COINBOX_GIT_BASE_URL}/coinbox-mod-$${mod}/archive/${COINBOX_GIT_BRANCH}.zip ; \
 			unzip ${COINBOX_TMP}/$${mod}.zip -d ${COINBOX_TMP} ; \
-			${PIP_INSTALL} ${COINBOX_TMP}/coinbox-mod-$${mod}-${GIT_BRANCH} ; \
+			${PIP_INSTALL} ${COINBOX_TMP}/coinbox-mod-$${mod}-${COINBOX_GIT_BRANCH} ; \
 			done ;
 		rm -rf ${COINBOX_TMP}
 
 install-modules-git:
 		@echo "Installing selected Coinbox-mod-* using git..."
-		@echo ${INSTALL_MODULES}
-		for mod in ${INSTALL_MODULES}; do \
-			${PIP_INSTALL} git+${GIT_BASE_URL}/coinbox-mod-$${mod}@${GIT_BRANCH}#egg=Coinbox-mod-$${mod} ; \
+		@echo ${COINBOX_INSTALL_MODULES}
+		for mod in ${COINBOX_INSTALL_MODULES}; do \
+			${PIP_INSTALL} git+${COINBOX_GIT_BASE_URL}/coinbox-mod-$${mod}@${COINBOX_GIT_BRANCH}#egg=Coinbox-mod-$${mod} ; \
 			done ;
 
 develop-modules: develop-modules-git
 
 develop-modules-zip:
 		@echo "Installing selected Coinbox-mod-* using zip (in develop mode)..."
-		@echo ${INSTALL_MODULES}
+		@echo ${COINBOX_INSTALL_MODULES}
 		mkdir -p ${COINBOX_TMP}
-		for mod in ${INSTALL_MODULES}; do \
-			wget -O ${COINBOX_TMP}/$${mod}.zip ${GIT_BASE_URL}/coinbox-mod-$${mod}/archive/${GIT_BRANCH}.zip ; \
+		for mod in ${COINBOX_INSTALL_MODULES}; do \
+			wget -O ${COINBOX_TMP}/$${mod}.zip ${COINBOX_GIT_BASE_URL}/coinbox-mod-$${mod}/archive/${COINBOX_GIT_BRANCH}.zip ; \
 			unzip ${COINBOX_TMP}/$${mod}.zip -d ${COINBOX_TMP} ; \
-			${PIP_INSTALL} -e ${COINBOX_TMP}/coinbox-mod-$${mod}-${GIT_BRANCH} ; \
+			${PIP_DEVELOP} ${COINBOX_TMP}/coinbox-mod-$${mod}-${COINBOX_GIT_BRANCH} ; \
 			done ;
 
 develop-modules-git:
 		@echo "Installing selected Coinbox-mod-* using git (in develop mode)..."
-		@echo ${INSTALL_MODULES}
-		for mod in ${INSTALL_MODULES}; do \
-			${PIP_INSTALL} -e git+${GIT_BASE_URL}/coinbox-mod-$${mod}@${GIT_BRANCH}#egg=Coinbox-mod-$${mod} ; \
+		@echo ${COINBOX_INSTALL_MODULES}
+		for mod in ${COINBOX_INSTALL_MODULES}; do \
+			${PIP_DEVELOP} git+${COINBOX_GIT_BASE_URL}/coinbox-mod-$${mod}@${COINBOX_GIT_BRANCH}#egg=Coinbox-mod-$${mod} ; \
 			done ;
