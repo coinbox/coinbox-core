@@ -9,12 +9,9 @@ class Config(object):
         
         # Environment information
         self.env = env
-        self.config_dir = self.env.config_dir
-        self.data_dir = self.env.data_dir
-        self.locale_dir = self.env.locale_dir
         
         # Determine the full path to the config file
-        self.filename = os.path.join(self.config_dir, 'coinbox.json')
+        self.filename = os.path.join(self.env.config_dir, 'coinbox.json')
         
         # Initialize config storage
         self.__config = None
