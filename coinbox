@@ -10,7 +10,7 @@ try:
     import cbpos
     from cbpos.bootstrap import bootstrap
     bootstrap()
-    retcode = cbpos.run()
+    retcode = cbpos.loader.run()
 except KeyboardInterrupt:
     pass
 except Exception as e:
@@ -21,7 +21,7 @@ finally:
     logging.info('Exiting...')
     try:
         if cbpos is not None:
-            cbpos.terminate(retcode)
+            cbpos.loader.terminate(retcode)
     except:
         retcode = 1 if retcode == 0 else retcode
         sys.exit(retcode)

@@ -56,5 +56,4 @@ def bootstrap():
     
     # Export all the functions defined here in the main namespace
     import cbpos.core
-    for sym in cbpos.core.__all__:
-        setattr(cbpos, sym, getattr(cbpos.core, sym))
+    cbpos.loader = cbpos.core.CoreLoader()
