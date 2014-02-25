@@ -77,7 +77,8 @@ class DummyTranslatorBuilder(TranslatorBuilder):
     """
     A dummy translator builder which generates a global translator that only returns the same input.
     """
-    dummy_gettext = lambda message: message
+    def dummy_gettext(self, message):
+        return message
 
     def add(self, module_name, domain=None, localedir=None, languages=None, class_=None, fallback=True, codeset=None):
         self.register(module_name, self.dummy_gettext)
