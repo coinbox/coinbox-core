@@ -31,15 +31,16 @@ class Environ(object):
                         'locale: {s.locale_dir}>'.format(s=self, name=type(self).__name__)
 
 class FallbackEnviron(Environ):
+    
     def __init__(self):
         home = os.path.expanduser('~')
         default_config_dir = os.path.join(home, 'coinbox', 'config')
         default_data_dir = os.path.join(home, 'coinbox', 'data')
         default_locale_dir = os.path.join(home, 'coinbox', 'locale')
         
-        self.config_dir = os.environ.get('COINBOX_CONFIG_DIR', default_config_dir)
-        self.data_dir = os.environ.get('COINBOX_DATA_DIR', default_data_dir)
-        self.locale_dir = os.environ.get('COINBOX_LOCALE_DIR', default_locale_dir)
+        self.config_dir = os.environ.get(EnvironHelper.CONFIG_VAR, default_config_dir)
+        self.data_dir = os.environ.get(EnvironHelper.DATA_VAR, default_data_dir)
+        self.locale_dir = os.environ.get(EnvironHelper.LOCALE_VAR, default_locale_dir)
 
 class Win32Environ(Environ):
     """
@@ -272,6 +273,11 @@ class EnvironHelper(Environ):
     """
     Helper to guess the environment on which we are running.
     """
+    
+    CONFIG_VAR = 'COINBOX_CONFIG_DIR'
+    DATA_VAR = 'COINBOX_DATA_DIR'
+    LOCALE_VAR = 'COINBOX_LOCALE_DIR'
+    
     @classmethod
     def is_linux(cls):
         """Returns True on Linux"""
@@ -312,6 +318,13 @@ class EnvironHelper(Environ):
             return False
         else:
             return True
+    
+    @classmethod
+    def has_env_vars(cls):
+        """Returns True if all environment variables needed for Coinbox directories are present"""
+        return  cls.CONFIG_VAR in os.environ and \
+                cls.DATA_VAR in os.environ and \
+                cls.LOCALE_VAR in os.environ
 
 def guess_environ():
     """
@@ -319,8 +332,9 @@ def guess_environ():
     and return an Environ object to determine the default
     directories to use.
     """
-    if EnvironHelper.is_windows():
-        # TODO: frozen or not?
+    if EnvironHelper.has_env_vars():
+        return FallbackEnviron()
+    elif EnvironHelper.is_windows():
         return Win32Environ()
     elif EnvironHelper.is_linux():
         return LinuxEnviron()
