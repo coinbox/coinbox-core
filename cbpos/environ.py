@@ -24,6 +24,11 @@ class Environ(object):
     def __make_dirs(self, d):
         if not os.path.exists(d):
             os.makedirs(d)
+    
+    def __str__(self):
+        return '<{name} config: {s.config_dir}, ' \
+                        'data: {s.data_dir}, ' \
+                        'locale: {s.locale_dir}>'.format(s=self, name=type(self).__name__)
 
 class FallbackEnviron(Environ):
     def __init__(self):
