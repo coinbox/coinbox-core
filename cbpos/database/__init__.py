@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, exc
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.engine.url import URL
 
@@ -12,17 +12,6 @@ from .driver import Driver, DriverNotFoundError
 # Define default database configuration for different RDBMS's
 cbpos.config.set_default('db', 'used', 'default')
 cbpos.config.set_default('db', 'echo', False)
-
-_session = None
-def session():
-    """
-    Returns a new session if none is present.
-    TODO It is almost useless as it is always the same session that is returned. Check SQLAlchemy documentation in ORM>Session>FAQ for when to create a session.
-    """
-    global _session
-    if _session is None:
-        _session = Session()
-    return _session
 
 def get_url():
     """
@@ -47,17 +36,22 @@ def create():
     metadata = cbpos.database.Base.metadata
     metadata.create_all()
 
-engine, Base, Session = None, None, None
+def fail_if_not_started():
+    logger.warn('Trying to use the session while the database is not started.')
+    raise TypeError('Cannot use session if database not started')
+
+engine = None
+session = fail_if_not_started
+Base = declarative_base()
 def init():
     """
     Creates the SQLAlchemy engine, Session class and declarative base using the user's configuration.
     """
-    global engine, Base, Session, _session
+    global engine, Base, session
 
     if engine is not None:
-        logger.warn('Engine is not None. Deleting and recreating one')
-        del engine
-        engine = None
+        logger.debug('Engine is not None. Start operation ignored.')
+        return
     
     logger.debug('Starting database...')
     
@@ -65,9 +59,8 @@ def init():
     url = get_url()
     
     engine = create_engine(url, echo=echo)
-    Base = declarative_base(bind=engine)
-    Session = sessionmaker(bind=engine)
-    _session = None
+    Base.metadata.bind = engine
+    session = scoped_session(sessionmaker(bind=engine))
 
     # This is called to ensure an error is raised if connection failed
     engine.connect()
