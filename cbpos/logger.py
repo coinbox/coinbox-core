@@ -32,7 +32,7 @@ def configure():
     
     # The standard format used for file logging and console logging
     log_format = '%(name)s: %(message)s (%(filename)s:%(lineno)s)'
-    long_log_format = '[%(levelname)s]\t'+log_format
+    long_log_format = '[%(levelname)8s]\t'+log_format
     
     console = logging.StreamHandler()
     
@@ -41,13 +41,14 @@ def configure():
         console.setFormatter(ColoredFormatter(log_format))
     else:
         console.setFormatter(logging.Formatter(long_log_format))
-    root.addHandler(console)
     
     if filepath:
         # Set up logging to a file
         fh = logging.FileHandler(filepath, 'w')
         fh.setFormatter(logging.Formatter(long_log_format))
         root.addHandler(fh)
+    else:
+        root.addHandler(console)
     
     # Log any signal from any sender
     dispatcher.connect(log_signals, signal=dispatcher.Any, sender=dispatcher.Any)
