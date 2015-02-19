@@ -116,6 +116,9 @@ class CoreLoader(object):
                 logger.debug('Babel does not support locale %s', repr(lang))
             else:
                 logger.debug('Babel is using locale %s', repr(lang))
+                if locale is None:
+                    logger.warn('Babel returned a null Locale!')
+                    continue
                 cbpos.locale = locale
                 break
         else:
@@ -351,6 +354,9 @@ class CoreLoader(object):
             logger.debug('Babel does not support default locale')
             locale = Locale(self.fallback_language)
         else:
+            if locale is None:
+                logger.debug('Babel returned a default locale of None')
+                locale = Locale(self.fallback_language)
             cbpos.locale = locale
 
     def terminate(self, retcode=0):
