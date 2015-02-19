@@ -13,11 +13,30 @@ class PyInstallerCommand(Command):
     Requires PyInstaller to be installed in Python's path.
     """
     description = 'run PyInstaller script'
-    user_options = []
-    boolean_options = []
+    user_options = [
+        ('db-support=', None,
+         "Python modules to bundle for database support (e.g. 'MySQLdb,psycopg2')"),
+        ('debug', None,
+         "Use PyInstaller's debug command, i.e. Tell the bootloader to issue progress messages while "
+            "initializing and starting the bundled app. Used to "
+            "diagnose problems with missing imports."),
+        ('clean', None,
+         "Use PyInstaller's clean command, i.e. Clean PyInstaller cache and remove temporary files "
+            "before building."),
+        ('noconfirm', 'y',
+         "Use PyInstaller's noconfirm command, i.e. Replace output directory "
+            "without asking for confirmation"),
+    ]
+    boolean_options = [
+        'clean', 'debug', 'noconfirm'
+    ]
 
     def initialize_options(self):
         self.pyi_run = None
+        self.clean = False
+        self.db_support = None
+        self.debug = False
+        self.noconfirm = False
 
     def finalize_options(self):
         try:
@@ -30,7 +49,21 @@ class PyInstallerCommand(Command):
     def run(self):
         spec_file = os.path.join(os.path.dirname(__file__), "tools", "coinbox.spec")
         
-        self.pyi_run([spec_file])
+        args = []
+        if self.clean:
+            args.append("--clean")
+        if self.debug:
+            args.append("--debug")
+        if self.noconfirm:
+            args.append("--noconfirm")
+        if self.db_support:
+            for mod in self.db_support.split(','):
+                args.append('--hidden-import=' + mod.strip())
+        args.append(spec_file)
+        
+        print 'pyinstaller', ' '.join(args)
+        
+        self.pyi_run(args)
 
 class NSISCommand(Command):
     """

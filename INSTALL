@@ -152,10 +152,14 @@ own development environment and build from there.
     cd coinsetup/
     source Scripts/activate
     
-  * Install PySide, you can use easy_install for that:
+  * Install PySide, you can use pip for that (version 1.2.2 at least):
   
-    easy_install ../PySide-1.2.1-py2.7-win-amd64.egg
-    pyside_postinstall.py -install
+    pip install -U PySide
+
+  * Install py-bcypt and Pillow (these are needed manually because they are likely to fail to install automatically on Windows):
+  
+    pip install Pillow
+    pip install py-bcrypt-w32 # Special version for Windows, if the regular one doesn't work
 
   * Install core and modules (from git):
   
@@ -173,8 +177,7 @@ own development environment and build from there.
     
   * Run Coinbox (the data/config/locale directories will be in APPDATA or similar standard Windows path by default)
   
-    coinbox raw-config # Add a language (e.g. en_US) to locale > languages (it is crashing now without that, so just in case
-    coinbox config # Set up the database
+    coinbox # This will take you through steps to set up database and some other things.
 
   * Install PyInstaller to build the exe and dlls before we bundle it:
   
@@ -183,7 +186,7 @@ own development environment and build from there.
 
   * Now, there are some issues with PyInstaller which I noticed when using it. So by the time they're fixed, here's the workaround:
   
-    * Modify Lib/site-packages/PyInstaller/imptracker.py; find "FIXME"; comment "setattr(parent, nm, mod)" and replace with "pass"
+    * Modify Lib/site-packages/PyInstaller/depend/imptracker.py; find "FIXME"; comment "setattr(parent, nm, mod)" and replace with "pass"
     
     * Modify Lib/site-packages/PyInstaller/modules.py; add after line 121:
 
@@ -201,7 +204,8 @@ own development environment and build from there.
             # ...
             hiddenimports = ["babel.dates", "babel.plural", "babel.support"]
 
-        * Add the global.data file to the babel/ directory
+        * Add the global.dat file to the babel/ directory
+            import os
             # ...
             babel_globaldat = os.path.realpath(os.path.join(babel_localedata_dir, '..', 'global.dat'))
             # ...
@@ -210,26 +214,27 @@ own development environment and build from there.
 
   * Ok, now we can build with PyInstaller:
   
-    # This will output in the $(current directory)/dist/
-    # Use it if you want to output to a custom directory
-    pyinstaller /full/path/to/.../tools/coinbox.spec
+    # You cd to src/coinbox-pos and run ...
+    python setup.py bdist_pyi --clean --noconfirm --debug --db-support=MySQLdb,_mysql,psycopg2
     
-    # Or you cd to src/coinbox-pos and ...
-    # The standard future-proof way (using a custom command to setup.py)
-    python setup.py bdist_pyi
+    # Or, for more fine-grained control:
+    # This will output in the $(current directory)/dist/
+    # You can use it if you want to output to a custom directory
+    pyinstaller /full/path/to/.../tools/coinbox.spec
 
   * Install NSIS from their website
   
   * Use either of these command to build the installer:
   
-    # Same as before (custom directory etc.)
-    /full/path/to/makensis.exe -NOCD -- /full/path/to/tools/installer.nsi
-    
-    # Or using the custom setup.py command (recommended)
     # After cd'ing to src/coinbox-pos
     python setup.py bdist_nsis
+  
+    # Or, for more fine-grained control:
+    # Same as before (custom directory etc.)
+    /full/path/to/makensis.exe -NOCD -- /full/path/to/.../tools/installer.nsi
     
-  * Using the NSIS installer will save the config/data/locale directories in the registry,
+  * Note:
+    Using the NSIS installer will save the config/data/locale directories in the registry,
     and any instance of Coinbox on that machine will use those. If you delete them, it'll fall
     back to AppData/Roaming or /ProgramData or AppData/Local depending on which one exists.
     (that is the default behavior if no registry keys are present)
